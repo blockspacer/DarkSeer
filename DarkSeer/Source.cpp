@@ -24,234 +24,264 @@ inline namespace MemoryGlobals
         constexpr auto CACHE_LINE = std::hardware_destructive_interference_size;
 } // namespace MemoryGlobals
 
-inline namespace RandomGlobals
+inline namespace Random
 {
-        inline thread_local std::mt19937 g_tl_defaultRandomEngine;
-}
-inline namespace RandomInternal
-{
-        std::tuple<uint32_t, uint32_t> FeistelCoder(std::tuple<uint32_t, uint32_t> v)
+        inline namespace RandomGlobals
         {
-                uint32_t k[4]{0xA341316C, 0xC8013EA4, 0xAD90777D, 0x7E95761E};
-                uint32_t sum   = 0;
-                uint32_t delta = 0x9E3779B9;
-                for (unsigned i = 0; i < 4; i++)
-                {
-                        sum += delta;
-                        std::get<0>(v) +=
-                            ((std::get<1>(v) << 4) + k[0]) ^ (std::get<1>(v) + sum) ^ ((std::get<1>(v) >> 5) + k[1]);
-                        std::get<1>(v) +=
-                            ((std::get<0>(v) << 4) + k[2]) ^ (std::get<0>(v) + sum) ^ ((std::get<0>(v) >> 5) + k[3]);
-                }
-                return v;
+                inline thread_local std::mt19937 g_tl_defaultRandomEngine;
         }
-} // namespace RandomInternal
-
-inline namespace TagIntegrals
-{
-        template <typename... Ts>
-        struct percent
+        inline namespace RandomInternal
         {
-                std::tuple<Ts...> floats;
-                percent(Ts... ts)
+                std::tuple<uint32_t, uint32_t> FeistelCoder(std::tuple<uint32_t, uint32_t> v)
                 {
-                        floats = std::tuple(ts...);
+                        uint32_t k[4]{0xA341316C, 0xC8013EA4, 0xAD90777D, 0x7E95761E};
+                        uint32_t sum   = 0;
+                        uint32_t delta = 0x9E3779B9;
+                        for (unsigned i = 0; i < 4; i++)
+                        {
+                                sum += delta;
+                                std::get<0>(v) +=
+                                    ((std::get<1>(v) << 4) + k[0]) ^ (std::get<1>(v) + sum) ^ ((std::get<1>(v) >> 5) + k[1]);
+                                std::get<1>(v) +=
+                                    ((std::get<0>(v) << 4) + k[2]) ^ (std::get<0>(v) + sum) ^ ((std::get<0>(v) >> 5) + k[3]);
+                        }
+                        return v;
                 }
-        };
-        template <typename T1>
-        percent(T1 t1)->percent<float>;
-        template <typename T1, typename T2>
-        percent(T1 t1, T2 t2)->percent<float, float>;
-        template <typename T1, typename T2, typename T3>
-        percent(T1 t1, T2 t2, T3 t3)->percent<float, float, float>;
-} // namespace TagIntegrals
+        } // namespace RandomInternal
+} // namespace Random
 
-inline namespace WindowsGlobals
+inline namespace TaggedIntegrals
 {
-        inline HINSTANCE g_hInstance = 0;
-        inline LPSTR     g_pCmdLine  = 0;
-        inline int       g_nCmdShow  = 0;
-        inline LRESULT CALLBACK g_defaultWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        inline auto             g_screenWidth  = GetSystemMetrics(SM_CXSCREEN);
-        inline auto             g_screenHeight = GetSystemMetrics(SM_CYSCREEN);
-} // namespace WindowsGlobals
-inline namespace WindowsInternal
-{
-        using pWindowProc = LRESULT (*)(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-        struct WindowCreationDescriptor
+        inline namespace Interface
         {
-                char        WindowTitle[32];
-                char        WindowClassName[32];
-                HWND        hwnd;
-                pWindowProc windowProc;
-                int         x;
-                int         y;
-                int         width;
-                int         height;
-                HWND        parent;
-                HMENU       menu;
-                DWORD       style;
-                DWORD       exstyle;
-        };
-} // namespace WindowsInternal
+                template <typename... Ts>
+                struct percent
+                {
+                        std::tuple<Ts...> floats;
+                        percent(Ts... ts)
+                        {
+                                floats = std::tuple(ts...);
+                        }
+                };
+                template <typename T1>
+                percent(T1 t1)->percent<float>;
+                template <typename T1, typename T2>
+                percent(T1 t1, T2 t2)->percent<float, float>;
+                template <typename T1, typename T2, typename T3>
+                percent(T1 t1, T2 t2, T3 t3)->percent<float, float, float>;
+        } // namespace Interface
+} // namespace TaggedIntegrals
+
 inline namespace Windows
 {
-        struct Window
+        inline namespace Globals
         {
-            private:
-                HWND hwnd;
-
-            public:
-                Window(HWND hwnd) : hwnd(hwnd)
-                {}
-                void Show()
-                {
-                        ShowWindow(hwnd, SW_SHOWDEFAULT);
-                }
-        };
-        struct CreateWindow
+                inline HINSTANCE g_hInstance = 0;
+                inline LPSTR     g_pCmdLine  = 0;
+                inline int       g_nCmdShow  = 0;
+                inline LRESULT CALLBACK g_defaultWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+                inline auto             g_screenWidth  = GetSystemMetrics(SM_CXSCREEN);
+                inline auto             g_screenHeight = GetSystemMetrics(SM_CYSCREEN);
+        } // namespace Globals
+        inline namespace Internal
         {
-            private:
-                WindowCreationDescriptor windowCreationDescriptor;
+                using pWindowProc = LRESULT (*)(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+                struct WindowCreationDescriptor
+                {
+                        char        WindowTitle[32];
+                        char        WindowClassName[32];
+                        HWND        hwnd;
+                        pWindowProc windowProc;
+                        int         x;
+                        int         y;
+                        int         width;
+                        int         height;
+                        HWND        parent;
+                        HMENU       menu;
+                        DWORD       style;
+                        DWORD       exstyle;
+                };
+        } // namespace Internal
+        inline namespace Interface
+        {
+                struct Window
+                {
+                    private:
+                        HWND hwnd;
 
-            public:
-                CreateWindow()
+                    public:
+                        Window(HWND hwnd) : hwnd(hwnd)
+                        {}
+                        void Show()
+                        {
+                                ShowWindow(hwnd, SW_SHOWDEFAULT);
+                        }
+                };
+                struct CreateWindow
                 {
-                        memset(&windowCreationDescriptor, 0, sizeof(windowCreationDescriptor));
-                        windowCreationDescriptor.windowProc = g_defaultWindowProc;
-                        windowCreationDescriptor.style      = WS_OVERLAPPED;
-                        windowCreationDescriptor.x          = CW_USEDEFAULT;
-                        windowCreationDescriptor.y          = CW_USEDEFAULT;
-                        windowCreationDescriptor.width      = CW_USEDEFAULT;
-                        windowCreationDescriptor.height     = CW_USEDEFAULT;
-                        windowCreationDescriptor.style      = WS_OVERLAPPED;
-                        strcpy_s(windowCreationDescriptor.WindowClassName, std::to_string(g_tl_defaultRandomEngine()).c_str());
-                }
-                CreateWindow& Title(const char* title)
-                {
-                        strcpy_s(windowCreationDescriptor.WindowTitle, title);
-                        return *this;
-                }
-                CreateWindow& Position(int x, int y)
-                {
-                        windowCreationDescriptor.x = x;
-                        windowCreationDescriptor.y = y;
-                        return *this;
-                }
-                CreateWindow& Position(percent<float, float> pos)
-                {
-                        windowCreationDescriptor.x = std::lroundf((std::get<0>(pos.floats) / 100) * g_screenWidth);
-                        windowCreationDescriptor.y = std::lroundf((std::get<1>(pos.floats) / 100) * g_screenHeight);
-                        return *this;
-                }
-                CreateWindow& WindProc(pWindowProc wndProc)
-                {
-                        windowCreationDescriptor.windowProc = wndProc;
-                        return *this;
-                }
-                CreateWindow& Size(int width, int height)
-                {
-                        windowCreationDescriptor.width  = width;
-                        windowCreationDescriptor.height = height;
-                        return *this;
-                }
-                CreateWindow& Size(percent<float, float> size)
-                {
-                        windowCreationDescriptor.width  = (std::get<0>(size.floats) / 100) * g_screenWidth;
-                        windowCreationDescriptor.height = (std::get<1>(size.floats) / 100) * g_screenHeight;
-                        return *this;
-                }
-                Window Finalize()
-                {
-                        WNDCLASS wc          = {};
-                        wc.lpfnWndProc       = windowCreationDescriptor.windowProc;
-                        wc.hInstance         = g_hInstance;
-                        wc.lpszClassName     = windowCreationDescriptor.WindowClassName;
-                        auto standard_cursor = LoadCursor(0, IDC_ARROW);
-                        wc.hCursor           = standard_cursor;
+                    private:
+                        WindowCreationDescriptor windowCreationDescriptor;
+
+                    public:
+                        CreateWindow()
+                        {
+                                memset(&windowCreationDescriptor, 0, sizeof(windowCreationDescriptor));
+                                windowCreationDescriptor.windowProc = g_defaultWindowProc;
+                                windowCreationDescriptor.style      = WS_OVERLAPPED;
+                                windowCreationDescriptor.x          = CW_USEDEFAULT;
+                                windowCreationDescriptor.y          = CW_USEDEFAULT;
+                                windowCreationDescriptor.width      = CW_USEDEFAULT;
+                                windowCreationDescriptor.height     = CW_USEDEFAULT;
+                                windowCreationDescriptor.style      = WS_OVERLAPPED;
+                                strcpy_s(windowCreationDescriptor.WindowClassName,
+                                         std::to_string(g_tl_defaultRandomEngine()).c_str());
+                        }
+                        CreateWindow& Title(const char* title)
+                        {
+                                strcpy_s(windowCreationDescriptor.WindowTitle, title);
+                                return *this;
+                        }
+                        CreateWindow& Position(int x, int y)
+                        {
+                                windowCreationDescriptor.x = x;
+                                windowCreationDescriptor.y = y;
+                                return *this;
+                        }
+                        CreateWindow& Position(percent<float, float> pos)
+                        {
+                                windowCreationDescriptor.x = std::lroundf((std::get<0>(pos.floats) / 100) * g_screenWidth);
+                                windowCreationDescriptor.y = std::lroundf((std::get<1>(pos.floats) / 100) * g_screenHeight);
+                                return *this;
+                        }
+                        CreateWindow& WindProc(pWindowProc wndProc)
+                        {
+                                windowCreationDescriptor.windowProc = wndProc;
+                                return *this;
+                        }
+                        CreateWindow& Size(int width, int height)
+                        {
+                                windowCreationDescriptor.width  = width;
+                                windowCreationDescriptor.height = height;
+                                return *this;
+                        }
+                        CreateWindow& Size(percent<float, float> size)
+                        {
+                                windowCreationDescriptor.width  = (std::get<0>(size.floats) / 100) * g_screenWidth;
+                                windowCreationDescriptor.height = (std::get<1>(size.floats) / 100) * g_screenHeight;
+                                return *this;
+                        }
+                        Window Finalize()
+                        {
+                                WNDCLASS wc          = {};
+                                wc.lpfnWndProc       = windowCreationDescriptor.windowProc;
+                                wc.hInstance         = g_hInstance;
+                                wc.lpszClassName     = windowCreationDescriptor.WindowClassName;
+                                auto standard_cursor = LoadCursor(0, IDC_ARROW);
+                                wc.hCursor           = standard_cursor;
 
 
-                        DWORD err;
-                        if (!RegisterClassA(&wc))
-                                err = GetLastError();
-                        int pause = 0;
+                                DWORD err;
+                                if (!RegisterClassA(&wc))
+                                        err = GetLastError();
+                                int pause = 0;
 
-                        auto hwnd = CreateWindowExA(windowCreationDescriptor.exstyle,         // Optional window styles.
-                                                    windowCreationDescriptor.WindowClassName, // Window class
-                                                    windowCreationDescriptor.WindowTitle,     // Window text
-                                                    WS_OVERLAPPEDWINDOW,                      // Window style
+                                auto hwnd = CreateWindowExA(windowCreationDescriptor.exstyle,         // Optional window styles.
+                                                            windowCreationDescriptor.WindowClassName, // Window class
+                                                            windowCreationDescriptor.WindowTitle,     // Window text
+                                                            WS_OVERLAPPEDWINDOW,                      // Window style
 
-                                                    windowCreationDescriptor.x,
-                                                    windowCreationDescriptor.y,
-                                                    windowCreationDescriptor.width,
-                                                    windowCreationDescriptor.height,
+                                                            windowCreationDescriptor.x,
+                                                            windowCreationDescriptor.y,
+                                                            windowCreationDescriptor.width,
+                                                            windowCreationDescriptor.height,
 
-                                                    windowCreationDescriptor.parent, // Parent window
-                                                    windowCreationDescriptor.menu,   // Menu
-                                                    g_hInstance,                     // Instance handle
-                                                    0                                // Additional application data
-                        );
-                        return Window(hwnd);
-                }
-        };
+                                                            windowCreationDescriptor.parent, // Parent window
+                                                            windowCreationDescriptor.menu,   // Menu
+                                                            g_hInstance,                     // Instance handle
+                                                            0                                // Additional application data
+                                );
+                                return Window(hwnd);
+                        }
+                };
+        } // namespace Interface
 } // namespace Windows
 
 inline namespace Console
 {
-        inline void Initialize()
+        inline namespace Interface
         {
-                AllocConsole();
-                auto success = freopen("CONOUT$", "w", stdout);
-        }
-        inline void DisableQuickEdit()
-        {
-                HANDLE hConsole = GetStdHandle(STD_INPUT_HANDLE);
-                DWORD  mode;
-                if (!GetConsoleMode(hConsole, &mode))
+                inline void Initialize()
                 {
-                        // error getting the console mode. Exit.
-                        return;
+                        AllocConsole();
+                        auto success = freopen("CONOUT$", "w", stdout);
                 }
-                mode = mode & ~(ENABLE_QUICK_EDIT_MODE | ENABLE_EXTENDED_FLAGS);
-                if (!SetConsoleMode(hConsole, mode))
+                inline void DisableQuickEdit()
                 {
-                        // error setting console mode.
+                        HANDLE hConsole = GetStdHandle(STD_INPUT_HANDLE);
+                        DWORD  mode;
+                        if (!GetConsoleMode(hConsole, &mode))
+                        {
+                                // error getting the console mode. Exit.
+                                return;
+                        }
+                        mode = mode & ~(ENABLE_QUICK_EDIT_MODE | ENABLE_EXTENDED_FLAGS);
+                        if (!SetConsoleMode(hConsole, mode))
+                        {
+                                // error setting console mode.
+                        }
                 }
-        }
-        inline void EnableQuickEdit()
-        {
-                auto  conHandle = GetStdHandle(STD_INPUT_HANDLE);
-                DWORD mode;
-                if (!GetConsoleMode(conHandle, &mode))
+                inline void EnableQuickEdit()
                 {
-                        // error getting the console mode. Exit.
-                        return;
+                        auto  conHandle = GetStdHandle(STD_INPUT_HANDLE);
+                        DWORD mode;
+                        if (!GetConsoleMode(conHandle, &mode))
+                        {
+                                // error getting the console mode. Exit.
+                                return;
+                        }
+                        mode = mode | (ENABLE_QUICK_EDIT_MODE | ENABLE_EXTENDED_FLAGS);
+                        if (!SetConsoleMode(conHandle, mode))
+                        {
+                                // error setting console mode.
+                        }
                 }
-                mode = mode | (ENABLE_QUICK_EDIT_MODE | ENABLE_EXTENDED_FLAGS);
-                if (!SetConsoleMode(conHandle, mode))
+                inline void Shutdown()
                 {
-                        // error setting console mode.
+                        fclose(stdout);
+                        FreeConsole();
                 }
-        }
-        inline void Shutdown()
-        {
-                fclose(stdout);
-                FreeConsole();
-        }
+        } // namespace Interface
 } // namespace Console
 
-#define DBGRawMouseInput
 inline namespace RawInput
 {
-        inline namespace RawInputGlobals
+#ifndef DBGRawMouseInput
+#define DBGRawMouseInput false
+#endif
+        inline namespace DebugGlobals
+        {
+                uint64_t g_dbg_prevInputFrameCounter = -1;
+                uint64_t g_dbg_inputFrameCounter     = 0;
+        } // namespace DebugGlobals
+
+        inline namespace Constexpr
         {
                 constexpr auto MICKEY = KiB * 64;
         }
-        inline namespace RawInputInterface
+
+        // Forward Declares
+        inline namespace Interface
         {
                 struct InputFrame;
-        } // namespace RawInputInterface
-        inline namespace RawInputInternal
+        } // namespace Interface
+        inline namespace Debug
+        {
+                void DbgIncrementInputFrame();
+                void DbgStoreInputFrameCounter(InputFrame*);
+                void DbgDumpFrameData();
+        } // namespace Debug
+
+        inline namespace Internal
         {
                 // for initializing previous mouse x and y only
                 POINT GetCursorInitialPos()
@@ -268,37 +298,14 @@ inline namespace RawInput
                 {
                         return (static_cast<float>(value) / MICKEY) * g_screenHeight;
                 }
-        } // namespace RawInputInternal
-#ifdef DBGRawMouseInput
-        inline namespace RawInputDebugGlobals
-        {
-                uint64_t g_dbg_prevInputFrameCounter = -1;
-                uint64_t g_dbg_inputFrameCounter     = 0;
-        } // namespace RawInputDebugGlobals
-        inline namespace RawInputDebug
-        {
-                void DbgIncrementInputFrame();
-                void DbgStoreInputFrameCounter(InputFrame*);
-                void DbgDumpFrameData(InputFrame*, int, int);
-        } // namespace RawInputDebug_ACTIVE
-#else
-        inline namespace RawInputDebug_INACTIVE
-        {
-                void DbgIncrementInputFrame()
-                {}
-                void DbgStoreInputFrameCounter(InputFrame*)
-                {}
-                void DbgDumpFrameData(InputFrame*, int, int)
-                {}
-        } // namespace RawInputDebug_INACTIVE
-#endif
-        inline namespace RawInputGlobals
+        } // namespace Internal
+        inline namespace Globals
         {
                 POINT cursorInitialPos = GetCursorInitialPos();
                 int   g_prevX          = cursorInitialPos.x;
                 int   g_prevY          = cursorInitialPos.y;
-        } // namespace RawInputGlobals
-        inline namespace RawInputInterface
+        } // namespace Globals
+        inline namespace Interface
         {
                 struct alignas(CACHE_LINE) InputFrame
                 {
@@ -367,7 +374,7 @@ inline namespace RawInput
                                                 g_prevY       = _screenY;
                                         }
                                         DbgStoreInputFrameCounter(&inputFrameAlias);
-                                        DbgDumpFrameData(&inputFrameAlias, _x, _y);
+                                        DbgDumpFrameData();
                                 }
 
                                 m_bufferSizes[m_writeBufferIndex]++;
@@ -424,12 +431,12 @@ inline namespace RawInput
                                 _aligned_free(const_cast<InputFrame*>(m_buffers));
                         }
                 };
-        } // namespace RawInputInterface
-        inline namespace RawInputGlobals
+        } // namespace Interface
+        inline namespace Globals
         {
                 InputBuffer g_inputBuffer;
-        } // namespace RawInputGlobals
-        inline namespace RawInputInterface
+        } // namespace Globals
+        inline namespace Interface
         {
                 void Initialize()
                 {
@@ -458,131 +465,115 @@ inline namespace RawInput
                 {
                         g_inputBuffer.Shutdown();
                 }
-        } // namespace RawInputInterface
-
-#ifdef DBGRawMouseInput
-        inline namespace RawInputDebug
+        } // namespace Interface
+        inline namespace Debug
         {
                 void DbgIncrementInputFrame()
                 {
-                        g_dbg_inputFrameCounter++;
+                        if constexpr (DBGRawMouseInput)
+                                g_dbg_inputFrameCounter++;
                 }
                 void DbgStoreInputFrameCounter(InputFrame* thisFrame)
                 {
-                        thisFrame->frameNumber = g_dbg_inputFrameCounter;
+                        if constexpr (DBGRawMouseInput)
+                                thisFrame->frameNumber = g_dbg_inputFrameCounter;
                 }
-                void DbgDumpFrameData(InputFrame* thisFrame, int x, int y)
+                void DbgDumpFrameData()
                 {
-                        if (thisFrame->IsMouseInput())
-                        {
-                                std::cout << "Frame:\t\t\t" << thisFrame->frameNumber << std::endl;
-
-                                // int x = thisFrame->rawInput.data.mouse.lLastX;
-                                // int y = thisFrame->rawInput.data.mouse.lLastY;
-
-                                if (thisFrame->rawInput.data.mouse.usFlags == MOUSE_MOVE_ABSOLUTE)
-                                {
-                                        // x = MickeyToScreenPosX(x) - g_prevX;
-                                        // y = MickeyToScreenPosX(y) - g_prevY;
-                                }
-
-                                std::cout << "X:\t\t\t" << x << std::endl;
-                                std::cout << "Y:\t\t\t" << y << std::endl;
-
-                                std::cout << "Buttons:\t\t\t" << thisFrame->rawInput.data.mouse.ulButtons << std::endl;
-                                std::cout << "ButtonData:\t\t\t" << thisFrame->rawInput.data.mouse.usButtonData << std::endl;
-                                std::cout << "ButtonFlags:\t\t\t" << thisFrame->rawInput.data.mouse.usButtonFlags << std::endl;
-                                std::cout << "Flags:\t\t\t" << thisFrame->rawInput.data.mouse.usFlags << std::endl;
-                                std::cout << "Extra:\t\t\t" << thisFrame->rawInput.data.mouse.ulExtraInformation << std::endl;
-                                std::cout << std::endl << std::endl;
-                        }
-                        g_dbg_prevInputFrameCounter = thisFrame->frameNumber;
+                        if constexpr (DBGRawMouseInput)
+                                ;
+                        // g_dbg_prevInputFrameCounter = thisFrame->frameNumber;
                 }
-        } // namespace RawInputDebug_ACTIVE
-#endif
+        } // namespace Debug
 } // namespace RawInput
 
-inline namespace WindowsMessagesGlobals
-{
-        inline bool g_windowsMessageShutdown = false;
-}
-inline namespace WindowsMessagesInternal
-{
-        inline void ProcessWindowsMessages()
-        {
-                MSG msg{};
-                while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE))
-                {
-                        TranslateMessage(&msg);
-                        DispatchMessageA(&msg);
-                }
-        }
-} // namespace WindowsMessagesInternal
 inline namespace WindowsMessages
 {
-        inline void LaunchMessageLoop()
+        inline namespace Globals
         {
-                while (!g_windowsMessageShutdown)
+                inline bool g_windowsMessageShutdown = false;
+        }
+        inline namespace Internal
+        {
+                inline void ProcessWindowsMessages()
                 {
-                        ProcessWindowsMessages();
+                        MSG msg{};
+                        while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE))
+                        {
+                                TranslateMessage(&msg);
+                                DispatchMessageA(&msg);
+                        }
                 }
-        }
-        inline void RequestMessageLoopExit()
+        } // namespace Internal
+        inline namespace Interface
         {
-                g_windowsMessageShutdown = true;
-        }
+                inline void LaunchMessageLoop()
+                {
+                        while (!g_windowsMessageShutdown)
+                        {
+                                ProcessWindowsMessages();
+                        }
+                }
+                inline void RequestMessageLoopExit()
+                {
+                        g_windowsMessageShutdown = true;
+                }
+        } // namespace Interface
 } // namespace WindowsMessages
 
-inline namespace EngineGlobals
-{
-        volatile bool g_engineShutdown = false;
-        uint64_t      g_frameCounter   = 0;
-        std::thread   g_engineThread;
-} // namespace EngineGlobals
-inline namespace EngineInternal
-{
-        inline void EngineMain()
-        {
-                while (!g_engineShutdown)
-                {
-                        g_inputBuffer.ProcessReads();
-                }
-        }
-} // namespace EngineInternal
 inline namespace Engine
 {
-        inline void Initialize()
+        inline namespace EngineGlobals
         {
-                g_engineThread = std::thread(EngineMain);
-        }
-        inline void Shutdown()
+                volatile bool g_engineShutdown = false;
+                uint64_t      g_frameCounter   = 0;
+                std::thread   g_engineThread;
+        } // namespace EngineGlobals
+        inline namespace EngineInternal
         {
-                g_engineShutdown = true;
-                g_engineThread.join();
-        }
+                inline void EngineMain()
+                {
+                        while (!g_engineShutdown)
+                        {
+                                g_inputBuffer.ProcessReads();
+                        }
+                }
+        } // namespace EngineInternal
+        inline namespace Interface
+        {
+                inline void Initialize()
+                {
+                        g_engineThread = std::thread(EngineMain);
+                }
+                inline void Shutdown()
+                {
+                        g_engineShutdown = true;
+                        g_engineThread.join();
+                }
+        } // namespace Interface
 } // namespace Engine
 
 void Accumulate(unsigned i)
 {}
 
 
-constexpr unsigned buffer32Sz = 8;
-__m256i            buffer32[buffer32Sz];
-
-void Invalidate()
+template <unsigned N>
+void Invalidate(__m256i (&buffer)[N])
 {
-        for (auto& itr : buffer32)
+        for (auto& itr : buffer)
                 itr = _mm256_set1_epi32(0xdeadbeef);
 }
-void ResetBuffer()
+template <unsigned N>
+void ResetBuffer(__m256i (&buffer)[N])
 {
-        for (auto& itr : buffer32)
+        for (auto& itr : buffer)
                 itr = _mm256_setzero_si256();
 }
-unsigned Accumulate(__m256i* buffer, unsigned bufferSz)
+template <unsigned N>
+unsigned Accumulate(__m256i (&buffer)[N])
 {
         __m256i accumulate = buffer[0];
-        for (unsigned i = 1; i < bufferSz; i++)
+        for (unsigned i = 1; i < N; i++)
                 accumulate = _mm256_add_epi32(accumulate, buffer[i]);
 
         return accumulate.m256i_i32[0] + accumulate.m256i_i32[1] + accumulate.m256i_i32[2] + accumulate.m256i_i32[3] +
@@ -590,18 +581,19 @@ unsigned Accumulate(__m256i* buffer, unsigned bufferSz)
 }
 
 int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pCmdLine, _In_ int _nCmdShow)
-{
-        Invalidate();
-        ResetBuffer();
 
+{
+        constexpr unsigned buffer32Sz = 8;
+        __m256i            buffer32[buffer32Sz];
+        Invalidate(buffer32);
+        ResetBuffer(buffer32);
         buffer32->m256i_i32[0] = 1;
         buffer32->m256i_i32[1] = 7;
         buffer32->m256i_i32[2] = 15;
         buffer32->m256i_i32[3] = 2;
         buffer32->m256i_i32[4] = 7;
         buffer32->m256i_i32[5] = -15;
-
-        auto result = Accumulate(buffer32, buffer32Sz);
+        auto result = Accumulate(buffer32);
 
         g_hInstance = _hInstance;
         g_pCmdLine  = _pCmdLine;
@@ -622,24 +614,27 @@ int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pC
         return 0;
 }
 
-inline namespace WindowsGlobals
+inline namespace Windows
 {
-        LRESULT CALLBACK g_defaultWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+        inline namespace Globals
         {
-                switch (uMsg)
+                LRESULT CALLBACK g_defaultWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 {
-                        case WM_DESTROY:
-                                PostQuitMessage(0);
-                                WindowsMessages::RequestMessageLoopExit();
-                                break;
-
-                        case WM_INPUT:
+                        switch (uMsg)
                         {
-                                g_inputBuffer.Write(lParam);
-                                DbgIncrementInputFrame();
-                                break;
+                                case WM_DESTROY:
+                                        PostQuitMessage(0);
+                                        WindowsMessages::RequestMessageLoopExit();
+                                        break;
+
+                                case WM_INPUT:
+                                {
+                                        g_inputBuffer.Write(lParam);
+                                        DbgIncrementInputFrame();
+                                        break;
+                                }
                         }
+                        return DefWindowProcA(hwnd, uMsg, wParam, lParam);
                 }
-                return DefWindowProcA(hwnd, uMsg, wParam, lParam);
-        }
-} // namespace WindowsGlobals
+        } // namespace Globals
+} // namespace Windows
