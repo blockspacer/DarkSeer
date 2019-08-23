@@ -140,6 +140,9 @@
     <ClInclude Include="MemoryLeakDetection.h" />
     <ClInclude Include="SmallSizeUtility.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="CompileSettings.cmp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
