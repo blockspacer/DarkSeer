@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstring>
 #include <iostream>
+#include <numeric>
 #include <random>
 #include <string>
 #include <thread>
@@ -13,19 +14,8 @@
 #undef min
 #undef max
 using QWORD = __int64;
-#include "MemoryLeakDetection.h"
-#include "SmallSizeUtility.h"
-
-template <typename... SubSettings>
-struct ConfigurationSettings : public SubSettings...
-{};
-
-template <typename... SubSettingsLhs, typename... SubSettingsRhs>
-constexpr auto operator+(const ConfigurationSettings<SubSettingsLhs...>& lhs,
-                         const ConfigurationSettings<SubSettingsRhs...>& rhs)
-{
-        return ConfigurationSettings<SubSettingsLhs..., SubSettingsRhs...>{};
-}
+//#include "MemoryLeakDetection.h"
+//#include "SmallSizeUtility.h"
 
 inline namespace Math
 {
@@ -51,11 +41,33 @@ inline namespace Math
                        accumulate.m256i_i32[4] + accumulate.m256i_i32[5] + accumulate.m256i_i32[6] + accumulate.m256i_i32[7];
         }
 
-        template <typename T1, typename T2>
-        constexpr auto divideRoundUp(T1 dividend, T2 divisor)
+        template <typename IntegerType>
+        constexpr typename std::enable_if<!std::is_floating_point<IntegerType>::value && !std::is_signed<IntegerType>::value,
+                                          IntegerType>::type
+        DivideRoundUpU(IntegerType dividend, IntegerType divisor)
         {
-                assert(divisor != 0);
-                return (dividend + divisor - 1) / divisor;
+                return 1 + ((dividend - 1) / divisor);
+        }
+        template <typename IntegerType>
+        constexpr typename std::enable_if<!std::is_floating_point<IntegerType>::value && std::is_signed<IntegerType>::value,
+                                          IntegerType>::type
+        DivideRoundUpI(IntegerType dividend, IntegerType divisor)
+        {
+                if ((dividend < 0) ^ (divisor < 0))
+                {
+                        return dividend / divisor;
+                }
+                return 1 + ((dividend - 1) / divisor);
+        }
+        template <typename IntegerType>
+        constexpr typename std::enable_if<!std::is_floating_point<IntegerType>::value, IntegerType>::type DivideRoundUp(
+            IntegerType dividend,
+            IntegerType divisor)
+        {
+                if constexpr (std::is_signed<IntegerType>::value)
+                        return DivideRoundUpI(dividend, divisor);
+                else
+                        return DivideRoundUpU(dividend, divisor);
         }
 } // namespace Math
 
@@ -454,17 +466,17 @@ inline namespace RawInput
 
                                         for (unsigned i = 0; i <= bufferWriteIndex; i++)
                                         {
-                                                // std::cout << "[" << i << "]\t"
-                                                //          << std::get<0>(const_cast<std::tuple<long, long>*>(
-                                                //                 m_mouseDeltaBuffersUnsignedView)[i])
-                                                //          << ","
-                                                //          << std::get<1>(const_cast<std::tuple<long, long>*>(
-                                                //                 m_mouseDeltaBuffersUnsignedView)[i])
-                                                //          << std::endl;
+                                                std::cout << "[" << i << "]\t"
+                                                          << std::get<0>(const_cast<std::tuple<long, long>*>(
+                                                                 m_mouseDeltaBuffersUnsignedView)[i])
+                                                          << ","
+                                                          << std::get<1>(const_cast<std::tuple<long, long>*>(
+                                                                 m_mouseDeltaBuffersUnsignedView)[i])
+                                                          << std::endl;
                                                 if (i > 0)
                                                         int pause = 0;
                                         }
-                                        // std::cout << "\n\n";
+                                        std::cout << "\n\n";
 
 
                                         mouseInputElementAlias = std::tuple<long, long>(lastX, lastY);
@@ -651,91 +663,100 @@ inline namespace Engine
                 }
         } // namespace Interface
 } // namespace Engine
-
-
-struct Experimental
+inline namespace RawInputE
 {
-        // enum TransitionState : uint16_t
-        //{
-        //        UP,
-        //        DOWN
-        //};
-        // enum ButtonId : uint16_t
-        //{
-        //        Mouse0,
-        //        Mouse1,
-        //        Mouse2,
-        //        Mouse3,
-        //        Mouse4,
-        //        Mouse5
-        //};
-        // struct InputFrame
-        //{
-        //        InputFrame()
-        //        {}
-        //        InputFrame(long arg0, long arg1, TransitionState arg2, ButtonId arg3)
-        //        {
-        //                m_mouseDeltas     = {arg0, arg1};
-        //                m_transitionState = arg2;
-        //                m_buttonId        = arg3;
-        //        }
-        //        std::tuple<long, long> m_mouseDeltas;
-        //        TransitionState        m_transitionState; // up or down
-        //        ButtonId               m_buttonId;        // buttonId
-        //};
-        // static constexpr auto aewfwwaef = sizeof(Experimental::InputFrame);
-        // static constexpr auto m_SZ      = 32;
-        // static constexpr auto m_SZ256f  = m_SZ / (static_cast<float>(sizeof(__m256i)) / sizeof(Experimental::InputFrame));
-        // static constexpr auto m_SZ256   = static_cast<unsigned>(m_SZ256f);
-        // static_assert(!(m_SZ * sizeof(Experimental::InputFrame) % m_SZ256 * sizeof(__m256i)));
+        enum TransitionState : uint16_t
+        {
+                UP,
+                DOWN
+        };
+        enum ButtonId : uint16_t
+        {
+                Mouse0,
+                Mouse1,
+                Mouse2,
+                Mouse3,
+                Mouse4,
+                Mouse5
+        };
+        struct InputFrameE
+        {
+                InputFrameE()
+                {}
+                InputFrameE(long arg0, long arg1, TransitionState arg2, ButtonId arg3)
+                {
+                        m_mouseDeltas     = {arg0, arg1};
+                        m_transitionState = arg2;
+                        m_buttonId        = arg3;
+                }
+                std::tuple<long, long> m_mouseDeltas;
+                TransitionState        m_transitionState; // up or down
+                ButtonId               m_buttonId;        // buttonId
+        };
+        struct RawInputBufferE
+        {
+                static constexpr auto m_SZ_in          = 32ULL;
+                static constexpr auto m_lcm            = std::lcm(sizeof(InputFrameE), sizeof(__m256i));
+                static constexpr auto m_frameChunkSize = m_lcm / sizeof(InputFrameE);
+                static constexpr auto m_256ChunkSize   = m_lcm / sizeof(__m256i);
+                // round up to the nearest chunk size
+                static constexpr auto m_SZ = Math::DivideRoundUp(m_SZ_in, m_frameChunkSize) * m_frameChunkSize;
+                static constexpr auto m_SZ256 = (m_SZ * sizeof(InputFrameE)) / sizeof(__m256i);
 
-        // alignas(sizeof(__m256i)) InputFrame m_inputFrames[m_SZ];
-        // long m_inputFramesSz = 0;
-        // void reset()
-        //{
-        //        __m256i(&m_inputFrames256)[m_SZ256] = reinterpret_cast<__m256i(&)[m_SZ256]>(m_inputFrames);
+                alignas(sizeof(__m256i)) RawInputE::InputFrameE m_inputFrames[m_SZ];
+                long m_inputFramesSz = 0;
+                void reset()
+                {
+                        __m256i(&m_inputFrames256)[m_SZ256] = reinterpret_cast<__m256i(&)[m_SZ256]>(m_inputFrames);
 
-        //        for (auto& itr : m_inputFrames256)
-        //                itr = _mm256_setzero_si256();
-        //}
-        // void invalidate()
-        //{
-        //        __m256i(&m_inputFrames256)[m_SZ256] = reinterpret_cast<__m256i(&)[m_SZ256]>(m_inputFrames);
+                        for (auto& itr : m_inputFrames256)
+                                itr = _mm256_setzero_si256();
+                }
+                void invalidate()
+                {
+                        __m256i(&m_inputFrames256)[m_SZ256] = reinterpret_cast<__m256i(&)[m_SZ256]>(m_inputFrames);
 
-        //        for (auto& itr : m_inputFrames256)
-        //                itr = _mm256_set1_epi32(-1);
-        //}
-        // void push_back(Experimental::InputFrame InputFrame)
-        //{
-        //        // mouse move		:	push_back or concat_back
-        //        if (!InputFrame.m_buttonPresses)
-        //        {
-        //                // array is empty						:		always push_back
-        //                if (!m_inputFramesSz)
-        //                {
-        //                        m_inputFrames[m_inputFramesSz] = InputFrame;
-        //                        m_inputFramesSz++;
-        //                }
-        //                // last push was a button press			:		push_back
-        //                else if (m_inputFrames[m_inputFramesSz - 1].m_buttonPresses)
-        //                {
-        //                        m_inputFrames[m_inputFramesSz] = InputFrame;
-        //                        m_inputFramesSz++;
-        //                }
-        //                // last push was a mouse move			:		concat_back
-        //                else
-        //                {
-        //                        m_inputFrames[m_inputFramesSz - 1].m_mouseDeltas += InputFrame.m_mouseDeltas;
-        //                }
-        //        }
-        //        // button press		:	always push_back
-        //        else
-        //        {
-        //                m_inputFrames[m_inputFramesSz] = InputFrame;
-        //                m_inputFramesSz++;
-        //        }
-        //}
-};
+                        for (auto& itr : m_inputFrames256)
+                                itr = _mm256_set1_epi32(-1);
+                }
+
+
+                void push_back(RawInputE::InputFrameE InputFrame)
+                {
+                        // mouse move		:	push_back or concat_back
+                        if (!InputFrame.m_buttonId)
+                        {
+                                // array is empty						:		always push_back
+                                if (!m_inputFramesSz)
+                                {
+                                        m_inputFrames[m_inputFramesSz] = InputFrame;
+                                        m_inputFramesSz++;
+                                }
+                                // last push was a button press			:		push_back
+                                else if (m_inputFrames[m_inputFramesSz - 1].m_buttonId)
+                                {
+                                        m_inputFrames[m_inputFramesSz] = InputFrame;
+                                        m_inputFramesSz++;
+                                }
+                                // last push was a mouse move			:		concat_back
+                                else
+                                {
+                                        m_inputFrames[m_inputFramesSz - 1].m_mouseDeltas += InputFrame.m_mouseDeltas;
+                                }
+                        }
+                        // button press		:	always push_back
+                        else
+                        {
+                                m_inputFrames[m_inputFramesSz] = InputFrame;
+                                m_inputFramesSz++;
+                        }
+                }
+        };
+        inline namespace Globals
+        {
+                RawInputBufferE g_inputBufferE;
+        }
+} // namespace RawInputE
 
 
 inline namespace WindowsProcs
@@ -752,6 +773,7 @@ inline namespace WindowsProcs
                         case WM_INPUT:
                         {
                                 g_inputBuffer.Write(lParam);
+                                // g_inputBufferE.push_back();
                                 DbgIncrementInputFrame();
                                 break;
                         }
@@ -772,139 +794,28 @@ inline namespace WindowsProcs
         }
 } // namespace WindowsProcs
 
-
-template <auto _ConfigFlag>
-constexpr auto EnumToType();
-
-struct EmptyModule
-{
-
-};
-
-template <typename... Modules>
-struct Admin final : public Modules...
-{};
-
-template <auto& CompileSettings, unsigned... Is>
-constexpr auto CreateAdminImpl(std::index_sequence<Is...>)
-{
-        return Admin<decltype(EnumToType<std::get<Is>(CompileSettings)>())...>();
-}
-template <auto& CompileSettings>
-constexpr auto CreateAdmin()
-{
-        constexpr auto tuple_size = std::tuple_size<std::remove_reference<decltype(CompileSettings)>::type>::value;
-        return CreateAdminImpl<CompileSettings>(std::make_index_sequence<tuple_size>{});
-}
-
-enum class ConfigFlags
-{
-        DebugPie,
-        ReleasePie,
-        DebugWork,
-        ReleaseWork,
-        InvalidFlag
-};
-
-
-struct DebugBakePie
-{
-        void BakePie()
-        {
-                std::cout << "DebugPie\n";
-        }
-};
-struct ReleaseBakePie
-{
-        void BakePie()
-        {
-                std::cout << "ReleasePie\n";
-        }
-};
-
-struct DebugWork
-{
-        void DoWork()
-        {
-                std::cout << "DebugDoWork\n";
-        }
-};
-struct ReleaseWork
-{
-        void DoWork()
-        {
-                std::cout << "ReleaseDoWork\n";
-        }
-};
-
-template <>
-constexpr auto EnumToType<ConfigFlags::InvalidFlag>()
-{
-        return EmptyModule{};
-}
-template <>
-constexpr auto EnumToType<ConfigFlags::DebugPie>()
-{
-        return DebugBakePie{};
-}
-template <>
-constexpr auto EnumToType<ConfigFlags::ReleasePie>()
-{
-        return ReleaseBakePie{};
-}
-template <>
-constexpr auto EnumToType<ConfigFlags::DebugWork>()
-{
-        return DebugWork{};
-}
-template <>
-constexpr auto EnumToType<ConfigFlags::ReleaseWork>()
-{
-        return ReleaseWork{};
-}
-
-#define COMPILE_FLAG(X) ConfigFlags::##X,
-constexpr std::tuple CompileSettingsV5 = {
-#include "CompileSettings.cmp"
-    ConfigFlags::InvalidFlag};
-#undef COMPILE_FLAG
-
-
-constexpr std::tuple CompileSettingsV1 = {ConfigFlags::DebugPie};
-constexpr std::tuple CompileSettingsV2 = std::tuple_cat(CompileSettingsV1, std::tuple(ConfigFlags::DebugWork));
-inline auto          g_admin           = CreateAdmin<CompileSettingsV5>();
-
 int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pCmdLine, _In_ int _nCmdShow)
 {
+
+
         Console::Initialize();
         Console::DisableQuickEdit();
-        // auto test = CompileSettingsV5;
-        g_admin.BakePie();
 
+        g_hInstance = _hInstance;
+        g_pCmdLine  = _pCmdLine;
+        g_nCmdShow  = _nCmdShow;
 
-        // g_hInstance = _hInstance;
-        // g_pCmdLine  = _pCmdLine;
-        // g_nCmdShow  = _nCmdShow;
+        RawInput::Initialize();
+        Engine::Initialize();
 
-        // RawInput::Initialize();
-        // Engine::Initialize();
+        auto MyWindow = CreateWindow().Title("DarkSeer").Size(percent(50, 50)).Position(percent(25, 25)).Finalize();
 
-        // auto MyWindow  = CreateWindow().Title("DarkSeer").Size(percent(50, 50)).Position(percent(25, 25)).Finalize();
-        // auto MyWindow2 = CreateWindow()
-        //                     .Title("TestWindow")
-        //                     .Size(percent(25, 25))
-        //                     .Position(percent(25, 25))
-        //                     .WindProc(g_titleWindowProc)
-        //                     .BackgroundColor(1, 0, 0)
-        //                     .Finalize();
+        MyWindow.Show();
 
-        // MyWindow.Show();
-        // MyWindow2.Show();
+        WindowsMessages::LaunchMessageLoop();
 
-        // WindowsMessages::LaunchMessageLoop();
-
-        // Engine::Shutdown();
-        // RawInput::ShutDown();
+        Engine::Shutdown();
+        RawInput::ShutDown();
 
         return 0;
 }
