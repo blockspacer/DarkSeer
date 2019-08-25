@@ -311,18 +311,6 @@ inline namespace RawInput
                         GetCursorPos(&p);
                         return p;
                 }
-                int MickeyToScreenPosX(int value)
-                {
-                        return (static_cast<float>(value) / MICKEY) * g_screenWidth;
-                }
-                int MickeyToScreenPosY(int value)
-                {
-                        return (static_cast<float>(value) / MICKEY) * g_screenHeight;
-                }
-                bool IsMouseInput(RAWINPUT* rawInput)
-                {
-                        return rawInput->header.dwType == RIM_TYPEMOUSE;
-                }
         } // namespace Internal
         inline namespace Globals
         {
@@ -385,7 +373,7 @@ inline namespace RawInput
                                 GetRawInputData(
                                     (HRAWINPUT)RawInputlParam, RID_INPUT, &rawInputFrame, &dwSize, sizeof(RAWINPUTHEADER));
 
-                                if (IsMouseInput(&rawInputFrame))
+                                if (rawInputFrame.header.dwType = RIM_TYPEMOUSE)
                                 {
                                         const auto lastX = rawInputFrame.data.mouse.lLastX;
                                         const auto lastY = rawInputFrame.data.mouse.lLastY;
@@ -581,7 +569,8 @@ inline namespace WindowsProcs
         LRESULT CALLBACK g_mainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
                 InputFrameE inputFrame;
-                memset(&inputFrame, 0, sizeof(inputFrame));
+                memset(((char*)&inputFrame) + sizeof(PressState), 0, sizeof(InputFrameE) - sizeof(PressState));
+                inputFrame.m_pressState = g_inputBufferE.m_prevPressState;
 
                 switch (uMsg)
                 {
@@ -601,6 +590,20 @@ inline namespace WindowsProcs
                                             (ButtonSignature)(rawInputFrame.data.keyboard.MakeCode +
                                                               button_signature_flag * INPUT_NUM_KEYBOARD_SCANCODES);
                                         inputFrame.m_transitionState = transition_state;
+
+                                        // update inputFrame press states
+                                        switch (inputFrame.m_transitionState)
+                                        {
+                                                case TransitionState::INPUT_transitionStateUp:
+                                                        inputFrame.m_pressState.KeyUp(inputFrame.m_buttonSignature);
+                                                        break;
+                                                case TransitionState::INPUT_transitionStateDown:
+                                                        inputFrame.m_pressState.KeyDown(inputFrame.m_buttonSignature);
+                                                        break;
+                                        }
+                                        g_inputBufferE.m_prevPressState = inputFrame.m_pressState;
+
+                                        g_inputBufferE.write(inputFrame);
                                 }
                                 else if (rawInputFrame.header.dwType == RIM_TYPEMOUSE)
                                 {
@@ -609,6 +612,7 @@ inline namespace WindowsProcs
                                         {
                                                 inputFrame.m_mouseDeltas = std::tuple{rawInputFrame.data.mouse.lLastX,
                                                                                       rawInputFrame.data.mouse.lLastY};
+                                                g_inputBufferE.write(inputFrame);
                                         }
                                         // absolute mouse movment
                                         else if (rawInputFrame.data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
@@ -622,18 +626,14 @@ inline namespace WindowsProcs
                                                                          height);
 
                                                 inputFrame.m_mouseDeltas = std::tuple{x, y};
+                                                g_inputBufferE.write(inputFrame);
                                         }
                                 }
-                                g_inputBufferE.write(inputFrame);
-
-
-                                DbgIncrementInputFrame();
                                 break;
                         }
                         case WM_LBUTTONDOWN:
                         {
                                 inputFrame.m_buttonSignature = INPUT_mouseLeft;
-                                inputFrame.m_transitionState = INPUT_transitionStateDown;
                                 g_inputBufferE.write(inputFrame);
                                 break;
                         }
@@ -647,7 +647,6 @@ inline namespace WindowsProcs
                         case WM_RBUTTONDOWN:
                         {
                                 inputFrame.m_buttonSignature = INPUT_mouseRight;
-                                inputFrame.m_transitionState = INPUT_transitionStateDown;
                                 g_inputBufferE.write(inputFrame);
                                 break;
                         }
@@ -661,7 +660,6 @@ inline namespace WindowsProcs
                         case WM_MBUTTONDOWN:
                         {
                                 inputFrame.m_buttonSignature = INPUT_mouseMiddle;
-                                inputFrame.m_transitionState = INPUT_transitionStateDown;
                                 g_inputBufferE.write(inputFrame);
                                 break;
                         }
@@ -674,9 +672,9 @@ inline namespace WindowsProcs
                         }
                         case WM_MOUSEWHEEL:
                         {
-                                short mouseDelta                     = GET_WHEEL_DELTA_WPARAM(wParam);
-                                inputFrame.m_buttonSignature         = INPUT_mouseScrollVertical;
-                                (short&)inputFrame.m_transitionState = mouseDelta;
+                                std::underlying_type<TransitionState>::type mouseDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+                                inputFrame.m_buttonSignature                           = INPUT_mouseScrollVertical;
+                                (std::underlying_type<TransitionState>::type&)inputFrame.m_transitionState = mouseDelta;
                                 g_inputBufferE.write(inputFrame);
                                 break;
                         }
@@ -687,14 +685,12 @@ inline namespace WindowsProcs
                                         case XBUTTON1:
                                         {
                                                 inputFrame.m_buttonSignature = INPUT_mouseForward;
-                                                inputFrame.m_transitionState = INPUT_transitionStateDown;
                                                 g_inputBufferE.write(inputFrame);
                                                 break;
                                         }
                                         case XBUTTON2:
                                         {
                                                 inputFrame.m_buttonSignature = INPUT_mouseBack;
-                                                inputFrame.m_transitionState = INPUT_transitionStateDown;
                                                 g_inputBufferE.write(inputFrame);
                                                 break;
                                         }
@@ -722,7 +718,14 @@ inline namespace WindowsProcs
                                 }
                                 break;
                         }
-
+                        case WM_KILLFOCUS:
+                        {
+								// set all press states to released
+                                memset(&inputFrame.m_pressState, 0, sizeof(inputFrame.m_pressState));
+                                g_inputBufferE.m_prevPressState = inputFrame.m_pressState;
+                                g_inputBufferE.write(inputFrame);
+                                break;
+						}
 
                         case WM_DESTROY:
                         {
@@ -750,8 +753,9 @@ inline namespace WindowsProcs
 
 int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pCmdLine, _In_ int _nCmdShow)
 {
-        State          state;
-        constexpr auto r = buttonSignatureToString[INPUT_nonconvert];
+        RawInputE::PressState pressState;
+        memset(&pressState, 0, sizeof(pressState));
+
 
         Console::Initialize();
         Console::DisableQuickEdit();

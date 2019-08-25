@@ -287,46 +287,66 @@ inline namespace RawInputE
 {
         inline namespace Enums
         {
+#undef ENUM
+#define ENUM(E, V) INPUT_##E,
+                // dummy enum to get number of mouse signatures
                 enum class DummyEnum
                 {
 #include "MOUSE_SCANCODES.ENUM"
-					DUMMY_ENUM_NUM_MOUSE_SIGNATURES
+                        NUM_MOUSE_SIGNATURES
                 };
+#undef ENUM
 #define ENUM(E, V) INPUT_##E,
                 enum ButtonSignature : uint16_t
                 {
 #include "SCANCODES_FLAG0.ENUM"
 #include "SCANCODES_FLAG1.ENUM"
 #include "SCANCODES_FLAG2.ENUM"
-                        INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES,
+
 #include "MOUSE_SCANCODES.ENUM"
                         INPUT_NUM_SCANCODE_SIGNATURES
                 };
 #undef ENUM
+                constexpr uint8_t  INPUT_NUM_MOUSE_SCANCODES = (uint8_t)DummyEnum::NUM_MOUSE_SIGNATURES;
+                constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES =
+                    INPUT_NUM_SCANCODE_SIGNATURES - INPUT_NUM_MOUSE_SCANCODES;
                 constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODES = INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES / 3;
-                constexpr uint8_t  INPUT_NUM_MOUSE_SCANCODES =
-                    INPUT_NUM_SCANCODE_SIGNATURES - INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES - 1;
 #define ENUM(E, V) #E,
                 constexpr const char* buttonSignatureToString[INPUT_NUM_SCANCODE_SIGNATURES + 1]{
 #include "SCANCODES_FLAG0.ENUM"
 #include "SCANCODES_FLAG1.ENUM"
 #include "SCANCODES_FLAG2.ENUM"
-                    "INPUT_NUM_SCANCODE_SIGNATURES",
+
 #include "MOUSE_SCANCODES.ENUM"
                     "INPUT_NUM_SCANCODE_SIGNATURE_ENUMS"};
 #undef ENUM
 
 #define ENUM(E, V) bool INPUT_##E : 1;
-                struct State
+                struct PressState
                 {
+                        static constexpr auto _SZ64 = 48 /*sizeof(PressState)*/ / sizeof(uint64_t);
 #include "SCANCODES_FLAG0.ENUM"
 #include "SCANCODES_FLAG1.ENUM"
 #include "SCANCODES_FLAG2.ENUM"
+
+#include "MOUSE_SCANCODES.ENUM"
+
+                        void KeyDown(ButtonSignature button)
+                        {
+                                uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
+                                uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
+                                pressStateAlias[button >> 6] |= mask;
+                        }
+                        void KeyUp(ButtonSignature button)
+                        {
+                                uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
+                                uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
+                                pressStateAlias[button >> 6] &= ~mask;
+                        }
                 };
-
-
+#undef ENUM
                 // must be size 2 bytes to use the Transition state to store scroll delta if scroll button signature is set
-                enum TransitionState : uint16_t
+                enum TransitionState : int8_t
                 {
                         INPUT_transitionStateDown,
                         INPUT_transitionStateUp
@@ -334,34 +354,43 @@ inline namespace RawInputE
                 constexpr const char* transitionStateToString[2]{"down", "up"};
         } // namespace Enums
 
-        struct InputFrameE
+        struct alignas(64) InputFrameE
         {
-                InputFrameE()
-                {}
-                InputFrameE(long arg0, long arg1, TransitionState arg2, ButtonSignature arg3)
-                {
-                        m_mouseDeltas     = {arg0, arg1};
-                        m_transitionState = arg2;
-                        m_buttonSignature = arg3;
-                }
-                std::tuple<long, long> m_mouseDeltas;
-                TransitionState        m_transitionState; // up or down
-                ButtonSignature        m_buttonSignature; // buttonId
+                PressState             m_pressState;      //				48	B
+                std::tuple<long, long> m_mouseDeltas;     //				8	B
+                ButtonSignature        m_buttonSignature; // buttonId //	2	B
+                TransitionState        m_transitionState; // up or down //	1	B
+                char                   m_padding[5];
         };
+        // constexpr auto _SizeOfPressState      = sizeof(PressState);
+        // constexpr auto _SizeofInputFrameE     = sizeof(InputFrameE);
+        // constexpr auto _SizeofButtonSignature = sizeof(ButtonSignature);
+        // constexpr auto _SizeofTransitionState = sizeof(TransitionState);
 
         struct RawInputBufferE
         {
+            public:
+                PressState m_prevPressState;
+
             private:
-                static constexpr auto m_SZ_in          = 10000ULL;
-                static constexpr auto m_lcm            = std::lcm(sizeof(InputFrameE), sizeof(__m256i));
-                static constexpr auto m_frameChunkSize = m_lcm / sizeof(InputFrameE);
-                static constexpr auto m_256ChunkSize   = m_lcm / sizeof(__m256i);
+                static constexpr unsigned long long m_SZ_in          = saturatePowerOf2(10000ULL);
+                static constexpr auto               m_lcm            = std::lcm(sizeof(InputFrameE), sizeof(__m256i));
+                static constexpr auto               m_frameChunkSize = m_lcm / sizeof(InputFrameE);
+                static constexpr auto               m_256ChunkSize   = m_lcm / sizeof(__m256i);
                 // saturate SZ and SZ_M256 to their least common multiple sizes
                 static constexpr auto m_SZ      = Math::DivideRoundUp(m_SZ_in, m_frameChunkSize) * m_frameChunkSize;
                 static constexpr auto m_SZ_M256 = (m_SZ * sizeof(InputFrameE)) / sizeof(__m256i);
 
                 static constexpr unsigned m_NUM_SWAP_BUFFERS = saturatePowerOf2(2);
                 // m_NUM_SWAP_BUFFERS must be power of 2, swap() uses mersenne prime modulation
+
+
+                //static constexpr auto MAX_JOBS = saturatePowerOf2(m_SZ);
+                //static constexpr auto MASK     = MAX_JOBS - 1;
+                //JobInternal**         m_jobs;
+                //alignas(8) volatile int64_t m_bottom;
+                //alignas(8) volatile int64_t m_top;
+
 
                 volatile __m256i*     m_inputFramesM256;
                 volatile InputFrameE* m_inputFrames;
@@ -419,17 +448,69 @@ inline namespace RawInputE
                 }
 
             public:
-                volatile int _array_test[10000ULL];
                 // single consumer functions:
                 void process_writes()
-                {}
+                {
+                        const unsigned num_to_read  = m_bufferSizes[m_readSwapBufferIndex];
+                        const unsigned local_offset = m_readSwapBufferIndex * m_SZ;
+
+                        for (unsigned i = 0; i < num_to_read; i++)
+                        {
+                                const auto& thisFrame = const_cast<InputFrameE&>(m_inputFrames[local_offset + i]);
+
+                                if (thisFrame.m_pressState.INPUT_a && thisFrame.m_pressState.INPUT_s &&
+                                    thisFrame.m_pressState.INPUT_d)
+                                        std::cout << "holding asd\n\n";
+
+                                // const auto [x, y]     = thisFrame.m_mouseDeltas;
+                                // std::cout << "x:\t" << x << std::endl;
+                                // std::cout << "y:\t" << y << std::endl;
+                                // std::cout << "buttonSignature:\t" << buttonSignatureToString[thisFrame.m_buttonSignature]
+                                //          << std::endl;
+                                // if (thisFrame.m_buttonSignature != INPUT_mouseScrollVertical)
+                                //        std::cout << "transitionState:\t"
+                                //                  << transitionStateToString[thisFrame.m_transitionState] << std::endl;
+                                // else
+                                //        std::cout << "scrollDelta:\t" << ((short)thisFrame.m_transitionState) << std::endl;
+                                // std::cout << std::endl;
+                        }
+                        m_bufferSizes[m_readSwapBufferIndex] = 0;
+                        Sleep(30);
+                }
 
                 // single producer functions:
                 void write(InputFrameE& rawInputFrame)
-                {}
+                {
+                        /* std::cout << "x:\t" << std::get<0>(rawInputFrame.m_mouseDeltas) << std::endl;
+                         std::cout << "y:\t" << std::get<1>(rawInputFrame.m_mouseDeltas) << std::endl;
+                         std::cout << "buttonFlag:\t" << buttonSignatureToString[rawInputFrame.m_buttonSignature] << std::endl;
+                         if (rawInputFrame.m_buttonSignature != INPUT_mouseScrollVertical)
+                                 std::cout << "buttonFlag:\t" << transitionStateToString[rawInputFrame.m_transitionState]
+                                           << std::endl;
+                         else
+                                 std::cout << "mouseDelta:\t" << ((short)rawInputFrame.m_transitionState) << std::endl;*/
+                        if (!try_push(rawInputFrame))
+                        {
+                                while (m_bufferSizes[m_readSwapBufferIndex] != 0)
+                                {
+                                        Sleep(0);
+                                }
+                                // TODO // Run a job while we wait?
+
+                                //
+                                swap();
+                                try_push(rawInputFrame);
+                                return;
+                        };
+                        if (m_bufferSizes[m_readSwapBufferIndex] == 0)
+                                swap();
+
+                        Sleep(0);
+                }
 
                 void initialize()
                 {
+                        memset(&m_prevPressState, 0, sizeof(m_prevPressState));
                         m_inputFramesM256 = (volatile __m256i*)_aligned_malloc(m_SZ_M256 * sizeof(__m256i) * m_NUM_SWAP_BUFFERS,
                                                                                alignof(__m256i));
 
