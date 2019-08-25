@@ -14,86 +14,14 @@
 #undef min
 #undef max
 using QWORD = __int64;
+#include "Utility/Math.h"
+#include "Utility/RawInput.h"
 //#include "MemoryLeakDetection.h"
 //#include "SmallSizeUtility.h"
 
-inline namespace Math
-{
-        void Invalidate(__m256i* buffer, unsigned sz)
-        {
-                for (unsigned i = 0; i < sz; i++)
-                        buffer[i] = _mm256_set1_epi32(0xdeadbeef);
-        }
-
-        void ResetBuffer(__m256i* buffer, unsigned sz)
-        {
-                for (unsigned i = 0; i < sz; i++)
-                        buffer[i] = _mm256_setzero_si256();
-        }
-
-        unsigned Accumulate(const __m256i* const buffer, unsigned sz)
-        {
-                __m256i accumulate = buffer[0];
-                for (unsigned i = 1; i < sz; i++)
-                        accumulate = _mm256_add_epi32(accumulate, buffer[i]);
-
-                return accumulate.m256i_i32[0] + accumulate.m256i_i32[1] + accumulate.m256i_i32[2] + accumulate.m256i_i32[3] +
-                       accumulate.m256i_i32[4] + accumulate.m256i_i32[5] + accumulate.m256i_i32[6] + accumulate.m256i_i32[7];
-        }
-
-        template <typename IntegerType>
-        constexpr typename std::enable_if<!std::is_floating_point<IntegerType>::value && !std::is_signed<IntegerType>::value,
-                                          IntegerType>::type
-        DivideRoundUpU(IntegerType dividend, IntegerType divisor)
-        {
-                return 1 + ((dividend - 1) / divisor);
-        }
-        template <typename IntegerType>
-        constexpr typename std::enable_if<!std::is_floating_point<IntegerType>::value && std::is_signed<IntegerType>::value,
-                                          IntegerType>::type
-        DivideRoundUpI(IntegerType dividend, IntegerType divisor)
-        {
-                if ((dividend < 0) ^ (divisor < 0))
-                {
-                        return dividend / divisor;
-                }
-                return 1 + ((dividend - 1) / divisor);
-        }
-        template <typename IntegerType>
-        constexpr typename std::enable_if<!std::is_floating_point<IntegerType>::value, IntegerType>::type DivideRoundUp(
-            IntegerType dividend,
-            IntegerType divisor)
-        {
-                if constexpr (std::is_signed<IntegerType>::value)
-                        return DivideRoundUpI(dividend, divisor);
-                else
-                        return DivideRoundUpU(dividend, divisor);
-        }
-} // namespace Math
-
-template <typename... Ts, unsigned I>
-constexpr void plusequalsimpl(std::tuple<Ts...>& lhs, const std::tuple<Ts...>& rhs, std::index_sequence<I>)
-{
-        std::get<I>(lhs) += std::get<I>(rhs);
-}
-template <typename... Ts, unsigned I, unsigned... Is>
-constexpr typename std::enable_if<sizeof...(Is)>::type plusequalsimpl(std::tuple<Ts...>&       lhs,
-                                                                      const std::tuple<Ts...>& rhs,
-                                                                      std::index_sequence<I, Is...>)
-{
-        std::get<I>(lhs) += std::get<I>(rhs);
-        plusequalsimpl(lhs, rhs, std::index_sequence<Is...>{});
-}
 
 namespace std
-{
-        template <typename... Ts>
-        constexpr std::tuple<Ts...>& operator+=(std::tuple<Ts...>& lhs, const std::tuple<Ts...>& rhs)
-        {
-                plusequalsimpl(lhs, rhs, std::make_index_sequence<sizeof...(Ts)>{});
-                return lhs;
-        }
-} // namespace std
+{} // namespace std
 
 inline namespace MemoryGlobals
 {
@@ -346,9 +274,6 @@ inline namespace Console
 
 inline namespace RawInput
 {
-#ifndef DBGRawMouseInput
-#define DBGRawMouseInput false
-#endif
         inline namespace DebugGlobals
         {
                 uint64_t g_dbg_prevInputFrameCounter = -1;
@@ -367,9 +292,14 @@ inline namespace RawInput
         } // namespace Interface
         inline namespace Debug
         {
-                void DbgIncrementInputFrame();
-                void DbgStoreInputFrameCounter(InputFrame*);
-                void DbgDumpFrameData();
+                void DbgIncrementInputFrame()
+                {
+                        g_dbg_inputFrameCounter++;
+                }
+                void DbgStoreInputFrameCounter(InputFrame*)
+                {}
+                void DbgDumpFrameData()
+                {}
         } // namespace Debug
 
         inline namespace Internal
@@ -422,24 +352,24 @@ inline namespace RawInput
                 struct InputBuffer
                 {
                     private:
-                        static constexpr uint64_t m_BUFFER_SIZE = 16384ULL;
-                        static constexpr unsigned m_NUM_BUFFERS = 2;
-                        // m_NUM_BUFFERS must be power of 2, Swap() uses mersenne prime modulation
+                        static constexpr uint64_t m_BUFFER_SIZE      = 16384ULL;
+                        static constexpr unsigned m_NUM_SWAP_BUFFERS = 2;
+                        // m_NUM_SWAP_BUFFERS must be power of 2, swap() uses mersenne prime modulation
 
-                        volatile __m256i*                m_mouseDeltaBuffers;
-                        volatile std::tuple<long, long>* m_mouseDeltaBuffersUnsignedView;
+                        volatile __m256i*                m_inputFramesM256;
+                        volatile std::tuple<long, long>* m_inputFrames;
 
-                        volatile uint64_t m_bufferSizes[m_NUM_BUFFERS];
+                        volatile uint64_t m_bufferSizes[m_NUM_SWAP_BUFFERS];
                         unsigned          m_readSwapBufferIndex  = 0;
                         unsigned          m_writeSwapBufferIndex = 1;
 
-                        void Swap()
+                        void swap()
                         {
                                 m_readSwapBufferIndex  = m_writeSwapBufferIndex;
-                                m_writeSwapBufferIndex = (m_writeSwapBufferIndex + 1) & (m_NUM_BUFFERS - 1);
+                                m_writeSwapBufferIndex = (m_writeSwapBufferIndex + 1) & (m_NUM_SWAP_BUFFERS - 1);
                         }
 
-                        bool TryPushWrite(LPARAM& RawInputlParam)
+                        bool try_push(LPARAM& RawInputlParam)
                         {
                                 const auto bufferWriteIndex = m_bufferSizes[m_writeSwapBufferIndex];
 
@@ -461,17 +391,14 @@ inline namespace RawInput
                                         const auto lastY = rawInputFrame.data.mouse.lLastY;
 
                                         std::tuple<long, long>& mouseInputElementAlias = const_cast<std::tuple<long, long>*>(
-                                            m_mouseDeltaBuffersUnsignedView)[m_writeSwapBufferIndex * m_BUFFER_SIZE +
-                                                                             bufferWriteIndex];
+                                            m_inputFrames)[m_writeSwapBufferIndex * m_BUFFER_SIZE + bufferWriteIndex];
 
                                         for (unsigned i = 0; i <= bufferWriteIndex; i++)
                                         {
                                                 std::cout << "[" << i << "]\t"
-                                                          << std::get<0>(const_cast<std::tuple<long, long>*>(
-                                                                 m_mouseDeltaBuffersUnsignedView)[i])
+                                                          << std::get<0>(const_cast<std::tuple<long, long>*>(m_inputFrames)[i])
                                                           << ","
-                                                          << std::get<1>(const_cast<std::tuple<long, long>*>(
-                                                                 m_mouseDeltaBuffersUnsignedView)[i])
+                                                          << std::get<1>(const_cast<std::tuple<long, long>*>(m_inputFrames)[i])
                                                           << std::endl;
                                                 if (i > 0)
                                                         int pause = 0;
@@ -497,8 +424,8 @@ inline namespace RawInput
 
                                 for (unsigned i = 0; i < m_bufferSizes[m_readSwapBufferIndex]; i++)
                                 {
-                                        auto thisFrame = const_cast<__m256i*>(
-                                            &m_mouseDeltaBuffers[m_readSwapBufferIndex * m_BUFFER_SIZE + i]);
+                                        auto thisFrame =
+                                            const_cast<__m256i*>(&m_inputFramesM256[m_readSwapBufferIndex * m_BUFFER_SIZE + i]);
                                 }
                                 Sleep(160);
                                 m_bufferSizes[m_readSwapBufferIndex] = 0;
@@ -507,7 +434,7 @@ inline namespace RawInput
                         // single producer functions:
                         void Write(LPARAM& RawInputLParam)
                         {
-                                if (!TryPushWrite(RawInputLParam))
+                                if (!try_push(RawInputLParam))
                                 {
                                         while (m_bufferSizes[m_readSwapBufferIndex] != 0)
                                         {
@@ -516,29 +443,31 @@ inline namespace RawInput
                                         // TODO // Run a job while we wait?
 
                                         //
-                                        Swap();
-                                        TryPushWrite(RawInputLParam);
+                                        swap();
+                                        try_push(RawInputLParam);
                                         return;
                                 };
                                 if (m_bufferSizes[m_readSwapBufferIndex] == 0)
-                                        Swap();
+                                        swap();
 
                                 Sleep(0);
                         }
 
                         void Initialize()
                         {
-                                m_mouseDeltaBuffers = (volatile __m256i*)_aligned_malloc(
-                                    m_BUFFER_SIZE * sizeof(__m256i) * m_NUM_BUFFERS, alignof(__m256i));
-                                m_mouseDeltaBuffersUnsignedView =
-                                    reinterpret_cast<decltype(m_mouseDeltaBuffersUnsignedView)>(m_mouseDeltaBuffers);
-
-                                ResetBuffer(const_cast<__m256i*>(m_mouseDeltaBuffers), m_BUFFER_SIZE);
+                                m_inputFramesM256 = (volatile __m256i*)_aligned_malloc(
+                                    m_BUFFER_SIZE * sizeof(__m256i) * m_NUM_SWAP_BUFFERS, alignof(__m256i));
+                                m_inputFrames = reinterpret_cast<decltype(m_inputFrames)>(m_inputFramesM256);
+                                assert(m_inputFrames);
+                                for (unsigned i = 0; i < m_BUFFER_SIZE * m_NUM_SWAP_BUFFERS; i++)
+                                {
+                                        const_cast<std::tuple<long, long>&>(m_inputFrames[i]) = std::tuple(0L, 0L);
+                                }
                         }
 
                         void Shutdown()
                         {
-                                _aligned_free(const_cast<__m256i*>(m_mouseDeltaBuffers));
+                                _aligned_free(const_cast<__m256i*>(m_inputFramesM256));
                         }
                 };
         } // namespace Interface
@@ -576,26 +505,6 @@ inline namespace RawInput
                         g_inputBuffer.Shutdown();
                 }
         } // namespace Interface
-        inline namespace Debug
-        {
-                void DbgIncrementInputFrame()
-                {
-                        if constexpr (DBGRawMouseInput)
-                                g_dbg_inputFrameCounter++;
-                }
-                void DbgStoreInputFrameCounter(InputFrame* thisFrame)
-                {
-                        if constexpr (DBGRawMouseInput)
-                                ;
-                        /*thisFrame->frameNumber = g_dbg_inputFrameCounter;*/
-                }
-                void DbgDumpFrameData()
-                {
-                        if constexpr (DBGRawMouseInput)
-                                ;
-                        // g_dbg_prevInputFrameCounter = thisFrame->frameNumber;
-                }
-        } // namespace Debug
 } // namespace RawInput
 
 inline namespace WindowsMessages
@@ -632,6 +541,7 @@ inline namespace WindowsMessages
         } // namespace Interface
 } // namespace WindowsMessages
 
+
 inline namespace Engine
 {
         inline namespace EngineGlobals
@@ -646,7 +556,8 @@ inline namespace Engine
                 {
                         while (!g_engineShutdown)
                         {
-                                g_inputBuffer.ProcessReads();
+                                // g_inputBuffer.ProcessReads();
+                                g_inputBufferE.process_writes();
                         }
                 }
         } // namespace EngineInternal
@@ -663,121 +574,165 @@ inline namespace Engine
                 }
         } // namespace Interface
 } // namespace Engine
-inline namespace RawInputE
-{
-        enum TransitionState : uint16_t
-        {
-                UP,
-                DOWN
-        };
-        enum ButtonId : uint16_t
-        {
-                Mouse0,
-                Mouse1,
-                Mouse2,
-                Mouse3,
-                Mouse4,
-                Mouse5
-        };
-        struct InputFrameE
-        {
-                InputFrameE()
-                {}
-                InputFrameE(long arg0, long arg1, TransitionState arg2, ButtonId arg3)
-                {
-                        m_mouseDeltas     = {arg0, arg1};
-                        m_transitionState = arg2;
-                        m_buttonId        = arg3;
-                }
-                std::tuple<long, long> m_mouseDeltas;
-                TransitionState        m_transitionState; // up or down
-                ButtonId               m_buttonId;        // buttonId
-        };
-        struct RawInputBufferE
-        {
-                static constexpr auto m_SZ_in          = 32ULL;
-                static constexpr auto m_lcm            = std::lcm(sizeof(InputFrameE), sizeof(__m256i));
-                static constexpr auto m_frameChunkSize = m_lcm / sizeof(InputFrameE);
-                static constexpr auto m_256ChunkSize   = m_lcm / sizeof(__m256i);
-                // round up to the nearest chunk size
-                static constexpr auto m_SZ = Math::DivideRoundUp(m_SZ_in, m_frameChunkSize) * m_frameChunkSize;
-                static constexpr auto m_SZ256 = (m_SZ * sizeof(InputFrameE)) / sizeof(__m256i);
-
-                alignas(sizeof(__m256i)) RawInputE::InputFrameE m_inputFrames[m_SZ];
-                long m_inputFramesSz = 0;
-                void reset()
-                {
-                        __m256i(&m_inputFrames256)[m_SZ256] = reinterpret_cast<__m256i(&)[m_SZ256]>(m_inputFrames);
-
-                        for (auto& itr : m_inputFrames256)
-                                itr = _mm256_setzero_si256();
-                }
-                void invalidate()
-                {
-                        __m256i(&m_inputFrames256)[m_SZ256] = reinterpret_cast<__m256i(&)[m_SZ256]>(m_inputFrames);
-
-                        for (auto& itr : m_inputFrames256)
-                                itr = _mm256_set1_epi32(-1);
-                }
-
-
-                void push_back(RawInputE::InputFrameE InputFrame)
-                {
-                        // mouse move		:	push_back or concat_back
-                        if (!InputFrame.m_buttonId)
-                        {
-                                // array is empty						:		always push_back
-                                if (!m_inputFramesSz)
-                                {
-                                        m_inputFrames[m_inputFramesSz] = InputFrame;
-                                        m_inputFramesSz++;
-                                }
-                                // last push was a button press			:		push_back
-                                else if (m_inputFrames[m_inputFramesSz - 1].m_buttonId)
-                                {
-                                        m_inputFrames[m_inputFramesSz] = InputFrame;
-                                        m_inputFramesSz++;
-                                }
-                                // last push was a mouse move			:		concat_back
-                                else
-                                {
-                                        m_inputFrames[m_inputFramesSz - 1].m_mouseDeltas += InputFrame.m_mouseDeltas;
-                                }
-                        }
-                        // button press		:	always push_back
-                        else
-                        {
-                                m_inputFrames[m_inputFramesSz] = InputFrame;
-                                m_inputFramesSz++;
-                        }
-                }
-        };
-        inline namespace Globals
-        {
-                RawInputBufferE g_inputBufferE;
-        }
-} // namespace RawInputE
 
 
 inline namespace WindowsProcs
 {
         LRESULT CALLBACK g_mainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
+                InputFrameE inputFrame;
+                memset(&inputFrame, 0, sizeof(inputFrame));
+
                 switch (uMsg)
                 {
-                        case WM_DESTROY:
-                                PostQuitMessage(0);
-                                WindowsMessages::RequestMessageLoopExit();
-                                break;
-
                         case WM_INPUT:
                         {
-                                g_inputBuffer.Write(lParam);
-                                // g_inputBufferE.push_back();
+                                RAWINPUT rawInputFrame;
+                                UINT     dwSize;
+                                GetRawInputData((HRAWINPUT)lParam, RID_INPUT, 0, &dwSize, sizeof(RAWINPUTHEADER));
+                                GetRawInputData((HRAWINPUT)lParam, RID_INPUT, &rawInputFrame, &dwSize, sizeof(RAWINPUTHEADER));
+
+                                if (rawInputFrame.header.dwType == RIM_TYPEKEYBOARD)
+                                {
+                                        uint16_t        button_signature_flag = rawInputFrame.data.keyboard.Flags >> 1;
+                                        TransitionState transition_state =
+                                            (TransitionState)(rawInputFrame.data.keyboard.Flags & 1);
+                                        inputFrame.m_buttonSignature =
+                                            (ButtonSignature)(rawInputFrame.data.keyboard.MakeCode +
+                                                              button_signature_flag * INPUT_NUM_KEYBOARD_SCANCODES);
+                                        inputFrame.m_transitionState = transition_state;
+                                }
+                                else if (rawInputFrame.header.dwType == RIM_TYPEMOUSE)
+                                {
+                                        // relative mouse movement
+                                        if (!(rawInputFrame.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE))
+                                        {
+                                                inputFrame.m_mouseDeltas = std::tuple{rawInputFrame.data.mouse.lLastX,
+                                                                                      rawInputFrame.data.mouse.lLastY};
+                                        }
+                                        // absolute mouse movment
+                                        else if (rawInputFrame.data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+                                        {
+                                                const int width  = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+                                                const int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+                                                int x = static_cast<int>((float(rawInputFrame.data.mouse.lLastX) / 65535.0f) *
+                                                                         width);
+                                                int y = static_cast<int>((float(rawInputFrame.data.mouse.lLastY) / 65535.0f) *
+                                                                         height);
+
+                                                inputFrame.m_mouseDeltas = std::tuple{x, y};
+                                        }
+                                }
+                                g_inputBufferE.write(inputFrame);
+
+
                                 DbgIncrementInputFrame();
                                 break;
                         }
+                        case WM_LBUTTONDOWN:
+                        {
+                                inputFrame.m_buttonSignature = INPUT_mouseLeft;
+                                inputFrame.m_transitionState = INPUT_transitionStateDown;
+                                g_inputBufferE.write(inputFrame);
+                                break;
+                        }
+                        case WM_LBUTTONUP:
+                        {
+                                inputFrame.m_buttonSignature = INPUT_mouseLeft;
+                                inputFrame.m_transitionState = INPUT_transitionStateUp;
+                                g_inputBufferE.write(inputFrame);
+                                break;
+                        }
+                        case WM_RBUTTONDOWN:
+                        {
+                                inputFrame.m_buttonSignature = INPUT_mouseRight;
+                                inputFrame.m_transitionState = INPUT_transitionStateDown;
+                                g_inputBufferE.write(inputFrame);
+                                break;
+                        }
+                        case WM_RBUTTONUP:
+                        {
+                                inputFrame.m_buttonSignature = INPUT_mouseRight;
+                                inputFrame.m_transitionState = INPUT_transitionStateUp;
+                                g_inputBufferE.write(inputFrame);
+                                break;
+                        }
+                        case WM_MBUTTONDOWN:
+                        {
+                                inputFrame.m_buttonSignature = INPUT_mouseMiddle;
+                                inputFrame.m_transitionState = INPUT_transitionStateDown;
+                                g_inputBufferE.write(inputFrame);
+                                break;
+                        }
+                        case WM_MBUTTONUP:
+                        {
+                                inputFrame.m_buttonSignature = INPUT_mouseMiddle;
+                                inputFrame.m_transitionState = INPUT_transitionStateUp;
+                                g_inputBufferE.write(inputFrame);
+                                break;
+                        }
+                        case WM_MOUSEWHEEL:
+                        {
+                                short mouseDelta                     = GET_WHEEL_DELTA_WPARAM(wParam);
+                                inputFrame.m_buttonSignature         = INPUT_mouseScrollVertical;
+                                (short&)inputFrame.m_transitionState = mouseDelta;
+                                g_inputBufferE.write(inputFrame);
+                                break;
+                        }
+                        case WM_XBUTTONDOWN:
+                        {
+                                switch (GET_XBUTTON_WPARAM(wParam))
+                                {
+                                        case XBUTTON1:
+                                        {
+                                                inputFrame.m_buttonSignature = INPUT_mouseForward;
+                                                inputFrame.m_transitionState = INPUT_transitionStateDown;
+                                                g_inputBufferE.write(inputFrame);
+                                                break;
+                                        }
+                                        case XBUTTON2:
+                                        {
+                                                inputFrame.m_buttonSignature = INPUT_mouseBack;
+                                                inputFrame.m_transitionState = INPUT_transitionStateDown;
+                                                g_inputBufferE.write(inputFrame);
+                                                break;
+                                        }
+                                }
+                                break;
+                        }
+                        case WM_XBUTTONUP:
+                        {
+                                switch (GET_XBUTTON_WPARAM(wParam))
+                                {
+                                        case XBUTTON1:
+                                        {
+                                                inputFrame.m_buttonSignature = INPUT_mouseForward;
+                                                inputFrame.m_transitionState = INPUT_transitionStateUp;
+                                                g_inputBufferE.write(inputFrame);
+                                                break;
+                                        }
+                                        case XBUTTON2:
+                                        {
+                                                inputFrame.m_buttonSignature = INPUT_mouseBack;
+                                                inputFrame.m_transitionState = INPUT_transitionStateUp;
+                                                g_inputBufferE.write(inputFrame);
+                                                break;
+                                        }
+                                }
+                                break;
+                        }
+
+
+
+                        case WM_DESTROY:
+                        {
+                                PostQuitMessage(0);
+                                WindowsMessages::RequestMessageLoopExit();
+                                break;
+                        }
                 }
+
                 return DefWindowProcA(hwnd, uMsg, wParam, lParam);
         }
         LRESULT CALLBACK g_titleWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -796,7 +751,7 @@ inline namespace WindowsProcs
 
 int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pCmdLine, _In_ int _nCmdShow)
 {
-
+        constexpr auto r = buttonSignatureToString[INPUT_nonconvert];
 
         Console::Initialize();
         Console::DisableQuickEdit();
@@ -806,6 +761,7 @@ int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pC
         g_nCmdShow  = _nCmdShow;
 
         RawInput::Initialize();
+        g_inputBufferE.initialize();
         Engine::Initialize();
 
         auto MyWindow = CreateWindow().Title("DarkSeer").Size(percent(50, 50)).Position(percent(25, 25)).Finalize();
@@ -813,7 +769,7 @@ int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pC
         MyWindow.Show();
 
         WindowsMessages::LaunchMessageLoop();
-
+        g_inputBufferE.shutdown();
         Engine::Shutdown();
         RawInput::ShutDown();
 

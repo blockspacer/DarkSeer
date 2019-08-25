@@ -134,14 +134,15 @@
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BitwiseUtility.h" />
-    <ClInclude Include="ContainerUtility.h" />
-    <ClInclude Include="MathUtility.h" />
-    <ClInclude Include="MemoryLeakDetection.h" />
-    <ClInclude Include="SmallSizeUtility.h" />
+    <None Include="CompileSettings.cmp" />
+    <None Include="Utility\MOUSE_SCANCODES.ENUM" />
+    <None Include="Utility\SCANCODES_FLAG1.ENUM" />
+    <None Include="Utility\SCANCODES_FLAG2.ENUM" />
+    <None Include="Utility\SCANCODES_FLAG0.ENUM" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="CompileSettings.cmp" />
+    <ClInclude Include="Utility\RawInput.h" />
+    <ClInclude Include="Utility\Math.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
