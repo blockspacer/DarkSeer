@@ -384,13 +384,13 @@ inline namespace RawInputE
                 static constexpr unsigned m_NUM_SWAP_BUFFERS = saturatePowerOf2(2);
                 // m_NUM_SWAP_BUFFERS must be power of 2, swap() uses mersenne prime modulation
 
-
-                //static constexpr auto MAX_JOBS = saturatePowerOf2(m_SZ);
-                //static constexpr auto MASK     = MAX_JOBS - 1;
-                //JobInternal**         m_jobs;
-                //alignas(8) volatile int64_t m_bottom;
-                //alignas(8) volatile int64_t m_top;
-
+                //================================================================
+                static constexpr auto MAX_JOBS = saturatePowerOf2(m_SZ);
+                static constexpr auto MASK     = MAX_JOBS - 1;
+                InputFrameE*          m_jobs;
+                volatile int64_t      m_bottom;
+                volatile int64_t      m_top;
+                //================================================================
 
                 volatile __m256i*     m_inputFramesM256;
                 volatile InputFrameE* m_inputFrames;
@@ -458,21 +458,6 @@ inline namespace RawInputE
                         {
                                 const auto& thisFrame = const_cast<InputFrameE&>(m_inputFrames[local_offset + i]);
 
-                                if (thisFrame.m_pressState.INPUT_a && thisFrame.m_pressState.INPUT_s &&
-                                    thisFrame.m_pressState.INPUT_d)
-                                        std::cout << "holding asd\n\n";
-
-                                // const auto [x, y]     = thisFrame.m_mouseDeltas;
-                                // std::cout << "x:\t" << x << std::endl;
-                                // std::cout << "y:\t" << y << std::endl;
-                                // std::cout << "buttonSignature:\t" << buttonSignatureToString[thisFrame.m_buttonSignature]
-                                //          << std::endl;
-                                // if (thisFrame.m_buttonSignature != INPUT_mouseScrollVertical)
-                                //        std::cout << "transitionState:\t"
-                                //                  << transitionStateToString[thisFrame.m_transitionState] << std::endl;
-                                // else
-                                //        std::cout << "scrollDelta:\t" << ((short)thisFrame.m_transitionState) << std::endl;
-                                // std::cout << std::endl;
                         }
                         m_bufferSizes[m_readSwapBufferIndex] = 0;
                         Sleep(30);
@@ -516,12 +501,17 @@ inline namespace RawInputE
 
                         m_inputFrames = reinterpret_cast<volatile InputFrameE*>(m_inputFramesM256);
 
+                        m_jobs   = (InputFrameE*)_aligned_malloc(sizeof(InputFrameE) * MAX_JOBS, 64);
+                        m_bottom = 0;
+                        m_top    = 0;
+
                         reset();
                 }
 
                 void shutdown()
                 {
                         _aligned_free(const_cast<__m256i*>(m_inputFramesM256));
+                        _aligned_free(m_jobs);
                 }
 
                 void reset()
@@ -540,6 +530,36 @@ inline namespace RawInputE
 
                         for (auto i = 0; i < m_SZ_M256; i++)
                                 inputFrames256i[i] = _mm256_set1_epi32(-1);
+                }
+
+
+                void Push(InputFrameE job) volatile
+                {
+                        const auto b = m_bottom;
+                        while (b - m_top >= MAX_JOBS)
+                                Sleep(0);
+
+                        m_jobs[b & MASK] = job;
+
+                        // ensure the job is written before b+1 is published to other threads.
+                        // on x86/64, a compiler barrier is enough.
+                        std::atomic_thread_fence(std::memory_order_seq_cst);
+
+                        m_bottom++;
+                }
+                void Pop_All2() volatile
+                {
+                        const auto b = m_bottom;
+                        const auto      frame_count = b - m_top;
+                        const auto      end         = m_top + frame_count;
+                        const auto      begin       = m_top;
+                        static uint64_t prevFrame   = -1;
+                        for (auto i = begin; i < end; i++)
+                        {
+                                InputFrameE inputFrame = m_jobs[i & MASK];
+                        }
+                        m_top += frame_count;
+                        Sleep(0);
                 }
         };
 

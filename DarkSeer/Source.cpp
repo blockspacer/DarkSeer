@@ -545,7 +545,8 @@ inline namespace Engine
                         while (!g_engineShutdown)
                         {
                                 // g_inputBuffer.ProcessReads();
-                                g_inputBufferE.process_writes();
+                                //g_inputBufferE.process_writes();
+                                g_inputBufferE.Pop_All2();
                         }
                 }
         } // namespace EngineInternal
@@ -602,8 +603,7 @@ inline namespace WindowsProcs
                                                         break;
                                         }
                                         g_inputBufferE.m_prevPressState = inputFrame.m_pressState;
-
-                                        g_inputBufferE.write(inputFrame);
+                                        g_inputBufferE.Push(inputFrame);
                                 }
                                 else if (rawInputFrame.header.dwType == RIM_TYPEMOUSE)
                                 {
@@ -612,7 +612,7 @@ inline namespace WindowsProcs
                                         {
                                                 inputFrame.m_mouseDeltas = std::tuple{rawInputFrame.data.mouse.lLastX,
                                                                                       rawInputFrame.data.mouse.lLastY};
-                                                g_inputBufferE.write(inputFrame);
+                                                g_inputBufferE.Push(inputFrame);
                                         }
                                         // absolute mouse movment
                                         else if (rawInputFrame.data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
@@ -626,7 +626,7 @@ inline namespace WindowsProcs
                                                                          height);
 
                                                 inputFrame.m_mouseDeltas = std::tuple{x, y};
-                                                g_inputBufferE.write(inputFrame);
+                                                g_inputBufferE.Push(inputFrame);
                                         }
                                 }
                                 break;
@@ -634,40 +634,40 @@ inline namespace WindowsProcs
                         case WM_LBUTTONDOWN:
                         {
                                 inputFrame.m_buttonSignature = INPUT_mouseLeft;
-                                g_inputBufferE.write(inputFrame);
+                                g_inputBufferE.Push(inputFrame);
                                 break;
                         }
                         case WM_LBUTTONUP:
                         {
                                 inputFrame.m_buttonSignature = INPUT_mouseLeft;
                                 inputFrame.m_transitionState = INPUT_transitionStateUp;
-                                g_inputBufferE.write(inputFrame);
+                                g_inputBufferE.Push(inputFrame);
                                 break;
                         }
                         case WM_RBUTTONDOWN:
                         {
                                 inputFrame.m_buttonSignature = INPUT_mouseRight;
-                                g_inputBufferE.write(inputFrame);
+                                g_inputBufferE.Push(inputFrame);
                                 break;
                         }
                         case WM_RBUTTONUP:
                         {
                                 inputFrame.m_buttonSignature = INPUT_mouseRight;
                                 inputFrame.m_transitionState = INPUT_transitionStateUp;
-                                g_inputBufferE.write(inputFrame);
+                                g_inputBufferE.Push(inputFrame);
                                 break;
                         }
                         case WM_MBUTTONDOWN:
                         {
                                 inputFrame.m_buttonSignature = INPUT_mouseMiddle;
-                                g_inputBufferE.write(inputFrame);
+                                g_inputBufferE.Push(inputFrame);
                                 break;
                         }
                         case WM_MBUTTONUP:
                         {
                                 inputFrame.m_buttonSignature = INPUT_mouseMiddle;
                                 inputFrame.m_transitionState = INPUT_transitionStateUp;
-                                g_inputBufferE.write(inputFrame);
+                                g_inputBufferE.Push(inputFrame);
                                 break;
                         }
                         case WM_MOUSEWHEEL:
@@ -675,7 +675,7 @@ inline namespace WindowsProcs
                                 std::underlying_type<TransitionState>::type mouseDelta = GET_WHEEL_DELTA_WPARAM(wParam);
                                 inputFrame.m_buttonSignature                           = INPUT_mouseScrollVertical;
                                 (std::underlying_type<TransitionState>::type&)inputFrame.m_transitionState = mouseDelta;
-                                g_inputBufferE.write(inputFrame);
+                                g_inputBufferE.Push(inputFrame);
                                 break;
                         }
                         case WM_XBUTTONDOWN:
@@ -685,13 +685,13 @@ inline namespace WindowsProcs
                                         case XBUTTON1:
                                         {
                                                 inputFrame.m_buttonSignature = INPUT_mouseForward;
-                                                g_inputBufferE.write(inputFrame);
+                                                g_inputBufferE.Push(inputFrame);
                                                 break;
                                         }
                                         case XBUTTON2:
                                         {
                                                 inputFrame.m_buttonSignature = INPUT_mouseBack;
-                                                g_inputBufferE.write(inputFrame);
+                                                g_inputBufferE.Push(inputFrame);
                                                 break;
                                         }
                                 }
@@ -705,14 +705,14 @@ inline namespace WindowsProcs
                                         {
                                                 inputFrame.m_buttonSignature = INPUT_mouseForward;
                                                 inputFrame.m_transitionState = INPUT_transitionStateUp;
-                                                g_inputBufferE.write(inputFrame);
+                                                g_inputBufferE.Push(inputFrame);
                                                 break;
                                         }
                                         case XBUTTON2:
                                         {
                                                 inputFrame.m_buttonSignature = INPUT_mouseBack;
                                                 inputFrame.m_transitionState = INPUT_transitionStateUp;
-                                                g_inputBufferE.write(inputFrame);
+                                                g_inputBufferE.Push(inputFrame);
                                                 break;
                                         }
                                 }
@@ -723,7 +723,7 @@ inline namespace WindowsProcs
 								// set all press states to released
                                 memset(&inputFrame.m_pressState, 0, sizeof(inputFrame.m_pressState));
                                 g_inputBufferE.m_prevPressState = inputFrame.m_pressState;
-                                g_inputBufferE.write(inputFrame);
+                                g_inputBufferE.Push(inputFrame);
                                 break;
 						}
 
