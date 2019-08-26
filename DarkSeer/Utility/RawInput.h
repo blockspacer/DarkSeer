@@ -6,7 +6,9 @@
 #include <numeric>
 #include <tuple>
 #include "Math.h"
-inline namespace RawInputE
+#include "MemoryDefines.h"
+
+inline namespace RawInput
 {
         inline void RegisterDefaultRawInputDevices()
         {
@@ -67,22 +69,22 @@ inline namespace RawInputE
 #undef ENUM
 
 #define ENUM(E, V) bool INPUT_##E : 1;
-                struct PressState
+                struct Key
                 {
-                        static constexpr auto _SZ64 = 48 /*sizeof(PressState)*/ / sizeof(uint64_t);
+                        static constexpr auto _SZ64 = 48 /*sizeof(Key)*/ / sizeof(uint64_t);
 #include "SCANCODES_FLAG0.ENUM"
 #include "SCANCODES_FLAG1.ENUM"
 #include "SCANCODES_FLAG2.ENUM"
 
 #include "MOUSE_SCANCODES.ENUM"
 
-                        void KeyDown(ButtonSignature button)
+                        inline void KeyDown(ButtonSignature button)
                         {
                                 uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
                                 uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
                                 pressStateAlias[button >> 6] |= mask;
                         }
-                        void KeyUp(ButtonSignature button)
+                        inline void KeyUp(ButtonSignature button)
                         {
                                 uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
                                 uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
@@ -100,9 +102,9 @@ inline namespace RawInputE
                 constexpr const char* transitionStateToString[INPUT_numTransitionStates]{"down", "up"};
         } // namespace Enums
 
-        struct alignas(64) InputFrameE
+        struct alignas(CACHE_LINE) InputFrame
         {
-                PressState             m_pressState;      //				48	B
+                Key                    m_pressState;      //				48	B
                 std::tuple<long, long> m_mouseDeltas;     //				8	B
                 ButtonSignature        m_buttonSignature; // buttonId //	2	B
                 int16_t                m_scrollDelta;     //				2	B
@@ -110,35 +112,37 @@ inline namespace RawInputE
                 char                   m_padding[3];
         };
 
-        struct RawInputBufferE
+        struct InputBuffer
         {
             private:
-                PressState m_lastPressState;
-                WNDPROC    m_parentWndProc;
-                HWND       m_parentHWND;
+                Key m_lastPressState;
+#ifdef STRICT
+                WNDPROC m_parentWndProc;
+#else
+                FARPROC m_parentWndProc
+#endif
+                HWND m_parentHWND;
                 //================================================================
                 static constexpr uint64_t MAX_INPUT_FRAMES_PER_FRAME = saturatePowerOf2(10000U);
                 static constexpr uint64_t MASK                       = MAX_INPUT_FRAMES_PER_FRAME - 1;
-                InputFrameE*              m_InputFrames;
+                InputFrame*               m_InputFrames;
                 volatile int64_t          m_bottom;
                 volatile int64_t          m_top;
                 //================================================================
+                static LRESULT CALLBACK InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
             public:
                 void Initialize(HWND hwnd);
 
                 void ShutDown();
 
-                void Push(InputFrameE inputFrame);
+                void Push(InputFrame inputFrame);
 
                 void PopAll();
-
-                static LRESULT CALLBACK
-                               ProcessMessage(UINT message, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
         };
 
         inline namespace Globals
         {
-                inline RawInputBufferE g_inputBufferE;
+                inline InputBuffer g_inputBuffer;
         }
-} // namespace RawInputE
+} // namespace RawInput
