@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <atomic>
 #include <iostream>
+#include <memory>
 #include <numeric>
 #include <tuple>
 #include "Math.h"
@@ -69,7 +70,7 @@ inline namespace RawInput
 #undef ENUM
 
 #define ENUM(E, V) bool INPUT_##E : 1;
-                struct Key
+                struct KeyState
                 {
                         static constexpr auto _SZ64 = 48 /*sizeof(Key)*/ / sizeof(uint64_t);
 #include "SCANCODES_FLAG0.ENUM"
@@ -104,7 +105,7 @@ inline namespace RawInput
 
         struct alignas(CACHE_LINE) InputFrame
         {
-                Key                    m_pressState;      //				48	B
+                KeyState               m_pressState;      //				48	B
                 std::tuple<long, long> m_mouseDeltas;     //				8	B
                 ButtonSignature        m_buttonSignature; // buttonId //	2	B
                 int16_t                m_scrollDelta;     //				2	B
@@ -115,30 +116,120 @@ inline namespace RawInput
         struct InputBuffer
         {
             private:
-                Key m_lastPressState;
-#ifdef STRICT
-                WNDPROC m_parentWndProc;
-#else
-                FARPROC m_parentWndProc
-#endif
-                HWND m_parentHWND;
                 //================================================================
+                // Multithreaded Circular Buffer (Single Producer - Single Consumer)
                 static constexpr uint64_t MAX_INPUT_FRAMES_PER_FRAME = saturatePowerOf2(10000U);
                 static constexpr uint64_t MASK                       = MAX_INPUT_FRAMES_PER_FRAME - 1;
-                InputFrame*               m_InputFrames;
+                InputFrame*               m_inputFrames;
                 volatile int64_t          m_bottom;
                 volatile int64_t          m_top;
                 //================================================================
+                KeyState       m_lastPressState;
+                WNDPROC        m_parentWndProc;
+                HWND           m_parentHWND;
                 static LRESULT CALLBACK InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
             public:
+                struct range
+                {
+                    private:
+                        const InputFrame*& m_inputFramesAlias;
+                        const int64_t m_bottom;
+                        const int64_t m_top;
+						void Update(volatile int64_t bottom, volatile int64_t top)
+						{
+                                const_cast<int64_t&>(m_top) = top;
+                                const_cast<int64_t&>(m_bottom) = bottom;
+						}
+                    public:
+                        range(const InputFrame*& inputFrames, volatile int64_t bottom, volatile int64_t& top) :
+                            m_inputFramesAlias(inputFrames),
+                            m_bottom(bottom),
+                            m_top(top)
+                        {}
+                        struct iterator
+                        {
+                                using iterator_category = std::random_access_iterator_tag;
+                                using value_type        = InputFrame;
+                                using difference_type   = int64_t;
+                                using pointer           = InputFrame*;
+                                using reference         = InputFrame&;
+
+                                const InputFrame*& m_ownerInputFramesAlias;
+                                const int64_t      m_top;
+                                const int64_t      m_bottom;
+                                int64_t            m_currIndex;
+
+                                inline iterator(const InputFrame*& ownerInputFrames,
+                                                int64_t            top,
+                                                int64_t            bottom,
+                                                int64_t            index) :
+                                    m_ownerInputFramesAlias(ownerInputFrames),
+                                    m_top(top),
+                                    m_bottom(bottom),
+                                    m_currIndex(index)
+                                {}
+                                inline iterator(const iterator& other) :
+                                    m_ownerInputFramesAlias(other.m_ownerInputFramesAlias),
+                                    m_top(other.m_top),
+                                    m_bottom(other.m_bottom),
+                                    m_currIndex(other.m_currIndex)
+                                {}
+                                // prefix
+                                inline iterator& operator++()
+                                {
+                                        m_currIndex++;
+                                        return *this;
+                                }
+                                // postfix
+                                inline iterator& operator++(int)
+                                {
+                                        auto temp = iterator(*this);
+                                        m_currIndex++;
+                                        return temp;
+                                }
+                                const InputFrame& operator*() const
+                                {
+                                        return m_ownerInputFramesAlias[InputBuffer::MASK & m_currIndex];
+                                }
+                                inline bool operator!=(const iterator& other) const
+                                {
+                                        return m_currIndex != other.m_currIndex;
+                                }
+                        };
+                        inline iterator begin() const
+                        {
+                                return iterator(m_inputFramesAlias, m_top, m_bottom, m_top);
+                        }
+                        inline iterator end() const
+                        {
+                                return iterator(m_inputFramesAlias, m_top, m_bottom, m_bottom);
+                        }
+                        inline int64_t GetFrameCount() const
+                        {
+                                return m_bottom - m_top;
+                        }
+
+                        friend class InputBuffer;
+                };
+
+            private:
+                range m_currentInputRange;
+
+            public:
+                InputBuffer();
+
                 void Initialize(HWND hwnd);
 
                 void ShutDown();
 
                 void Push(InputFrame inputFrame);
 
-                void PopAll();
+                [[deprecated]] void ProcessAll();
+
+                void BeginFrame();
+
+                range GetInputFrames();
         };
 
         inline namespace Globals

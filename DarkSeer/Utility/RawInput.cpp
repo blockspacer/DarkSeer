@@ -2,11 +2,14 @@
 #include <Windows.h>
 #include <assert.h>
 #include <commctrl.h>
+RawInput::InputBuffer::InputBuffer() : m_currentInputRange(const_cast<const InputFrame*&>(m_inputFrames), m_bottom, m_top)
+{}
+
 void RawInput::InputBuffer::Initialize(HWND hwnd)
 {
         memset(&m_lastPressState, 0, sizeof(m_lastPressState));
 
-        m_InputFrames = (InputFrame*)_aligned_malloc(sizeof(InputFrame) * MAX_INPUT_FRAMES_PER_FRAME, 64);
+        m_inputFrames = (InputFrame*)_aligned_malloc(sizeof(InputFrame) * MAX_INPUT_FRAMES_PER_FRAME, 64);
         m_bottom      = 0;
         m_top         = 0;
 
@@ -19,7 +22,7 @@ void RawInput::InputBuffer::Initialize(HWND hwnd)
 
 void RawInput::InputBuffer::ShutDown()
 {
-        _aligned_free(m_InputFrames);
+        _aligned_free(m_inputFrames);
 }
 
 void RawInput::InputBuffer::Push(InputFrame inputFrame)
@@ -39,7 +42,7 @@ void RawInput::InputBuffer::Push(InputFrame inputFrame)
         while (b - m_top >= MAX_INPUT_FRAMES_PER_FRAME)
                 Sleep(0);
 
-        m_InputFrames[b & MASK] = inputFrame;
+        m_inputFrames[b & MASK] = inputFrame;
 
         // ensure the inputFrame is written before b+1 is published to other threads.
         // on x86/64, a compiler barrier is enough.
@@ -48,17 +51,13 @@ void RawInput::InputBuffer::Push(InputFrame inputFrame)
         m_bottom++;
 }
 
-void RawInput::InputBuffer::PopAll()
+void RawInput::InputBuffer::ProcessAll()
 {
-        const auto      b           = m_bottom;
-        const auto      t           = m_top;
-        const auto      frame_count = b - t;
-        const auto      end         = t + frame_count;
-        const auto      begin       = t;
-        static uint64_t prevFrame   = -1;
-        for (auto i = begin; i < end; i++)
+        const auto b = m_bottom;
+        const auto t = m_top;
+        for (auto i = t; i < b; i++)
         {
-                InputFrame inputFrame = m_InputFrames[i & MASK];
+                InputFrame inputFrame = m_inputFrames[i & MASK];
 
                 auto [x, y] = inputFrame.m_mouseDeltas;
 
@@ -73,16 +72,26 @@ void RawInput::InputBuffer::PopAll()
                 if (inputFrame.m_scrollDelta)
                         std::cout << "(" << inputFrame.m_scrollDelta << ")";
         }
-        if (frame_count)
+        if (b - t)
                 std::cout << "\n";
+        m_top = b;
+}
 
-        m_top += frame_count;
+void RawInput::InputBuffer::BeginFrame()
+{
+        m_top = m_currentInputRange.m_bottom;
+        m_currentInputRange.Update(m_bottom, m_top);
+}
+
+RawInput::InputBuffer::range RawInput::InputBuffer::GetInputFrames()
+{
+        return m_currentInputRange;
 }
 
 LRESULT CALLBACK InputBuffer::InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
         InputFrame inputFrame;
-        memset(((char*)&inputFrame) + sizeof(Key), 0, sizeof(InputFrame) - sizeof(Key));
+        memset(((char*)&inputFrame) + sizeof(KeyState), 0, sizeof(InputFrame) - sizeof(KeyState));
         inputFrame.m_pressState = g_inputBuffer.m_lastPressState;
 
         switch (message)
@@ -182,7 +191,7 @@ LRESULT CALLBACK InputBuffer::InputWndProc(_In_ HWND hwnd, _In_ UINT message, _I
                         inputFrame.m_buttonSignature                           = INPUT_mouseScrollHorizontal;
                         inputFrame.m_scrollDelta                               = mouseDelta;
                         g_inputBuffer.Push(inputFrame);
-				}
+                }
                 case WM_XBUTTONDOWN:
                 {
                         switch (GET_XBUTTON_WPARAM(wParam))
