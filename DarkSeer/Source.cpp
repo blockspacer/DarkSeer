@@ -81,7 +81,7 @@ inline namespace TaggedIntegrals
 
 inline namespace WindowsProcs
 {
-        inline LRESULT CALLBACK g_mainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+        inline LRESULT CALLBACK g_mainWindowProc(HWND m_hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 }
 
 inline namespace Windows
@@ -100,7 +100,7 @@ inline namespace Windows
                 {
                         char    WindowTitle[32];
                         char    WindowClassName[32];
-                        HWND    hwnd;
+                        HWND    m_hwnd;
                         WNDPROC windowProc;
                         int     x;
                         int     y;
@@ -118,14 +118,18 @@ inline namespace Windows
                 struct Window
                 {
                     private:
-                        HWND hwnd;
+                        HWND m_hwnd;
 
                     public:
-                        Window(HWND hwnd) : hwnd(hwnd)
+                        Window(HWND m_hwnd) : m_hwnd(m_hwnd)
                         {}
                         void Show()
                         {
-                                ShowWindow(hwnd, SW_SHOWDEFAULT);
+                                ShowWindow(m_hwnd, SW_SHOWDEFAULT);
+                        }
+                        HWND GetHWND()
+                        {
+                                return m_hwnd;
                         }
                 };
                 struct CreateWindow
@@ -203,7 +207,7 @@ inline namespace Windows
                                         err = GetLastError();
                                 int pause = 0;
 
-                                auto hwnd = CreateWindowExA(windowCreationDescriptor.exstyle,         // Optional window styles.
+                                auto m_hwnd = CreateWindowExA(windowCreationDescriptor.exstyle,         // Optional window styles.
                                                             windowCreationDescriptor.WindowClassName, // Window class
                                                             windowCreationDescriptor.WindowTitle,     // Window text
                                                             WS_OVERLAPPEDWINDOW,                      // Window style
@@ -218,7 +222,7 @@ inline namespace Windows
                                                             g_hInstance,                     // Instance handle
                                                             0                                // Additional application data
                                 );
-                                return Window(hwnd);
+                                return Window(m_hwnd);
                         }
                 };
         } // namespace Interface
@@ -342,14 +346,28 @@ inline namespace Engine
 
 inline namespace WindowsProcs
 {
-        LRESULT CALLBACK g_mainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+        LRESULT CALLBACK g_mainWindowProc(HWND m_hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
-                InputFrameE inputFrame;
-                memset(((char*)&inputFrame) + sizeof(PressState), 0, sizeof(InputFrameE) - sizeof(PressState));
-                inputFrame.m_pressState = g_inputBufferE.m_lastPressState;
-
                 switch (uMsg)
                 {
+                        case WM_DESTROY:
+                        {
+                                PostQuitMessage(0);
+                                WindowsMessages::RequestMessageLoopExit();
+                                break;
+                        }
+                }
+
+                return DefWindowProcA(m_hwnd, uMsg, wParam, lParam);
+        }
+
+        LRESULT CALLBACK g_titleWindowProc(HWND m_hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+        {
+                switch (uMsg)
+                {
+                        case WM_CLOSE:
+                                CloseWindow(m_hwnd);
+                                break;
                         case WM_INPUT:
                         {
                                 RAWINPUT rawInputFrame;
@@ -438,7 +456,7 @@ inline namespace WindowsProcs
                         {
                                 std::underlying_type<TransitionState>::type mouseDelta = GET_WHEEL_DELTA_WPARAM(wParam);
                                 inputFrame.m_buttonSignature                           = INPUT_mouseScrollVertical;
-                                inputFrame.m_scrollDelta = mouseDelta;
+                                inputFrame.m_scrollDelta                               = mouseDelta;
                                 g_inputBufferE.Push(inputFrame);
                                 break;
                         }
@@ -491,25 +509,9 @@ inline namespace WindowsProcs
                                 break;
                         }
 
-                        case WM_DESTROY:
-                        {
-                                PostQuitMessage(0);
-                                WindowsMessages::RequestMessageLoopExit();
-                                break;
-                        }
-                }
 
-                return DefWindowProcA(hwnd, uMsg, wParam, lParam);
-        }
-        LRESULT CALLBACK g_titleWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-        {
-                switch (uMsg)
-                {
-                        case WM_CLOSE:
-                                CloseWindow(hwnd);
-                                break;
                         default:
-                                return DefWindowProcA(hwnd, uMsg, wParam, lParam);
+                                return DefWindowProcA(m_hwnd, uMsg, wParam, lParam);
                 }
                 return 0;
         }
@@ -525,11 +527,12 @@ int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pC
         g_nCmdShow  = _nCmdShow;
 
         RawInputE::RegisterDefaultRawInputDevices();
-        g_inputBufferE.Initialize();
+
         Engine::Initialize();
 
         auto MyWindow = CreateWindow().Title("DarkSeer").Size(percent(50, 50)).Position(percent(25, 25)).Finalize();
-
+        g_inputBufferE.Initialize(MyWindow.GetHWND());
+		
         MyWindow.Show();
 
         WindowsMessages::LaunchMessageLoop();
