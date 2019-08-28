@@ -103,8 +103,8 @@ inline namespace Windows
                 }
                 inline CreateWindow& Size(percent<float, float> size)
                 {
-                        windowCreationDescriptor.width  = (std::get<0>(size.floats) / 100) * g_screenWidth;
-                        windowCreationDescriptor.height = (std::get<1>(size.floats) / 100) * g_screenHeight;
+                        windowCreationDescriptor.width  = static_cast<int>((std::get<0>(size.floats) / 100) * g_screenWidth);
+                        windowCreationDescriptor.height = static_cast<int>((std::get<1>(size.floats) / 100) * g_screenHeight);
                         return *this;
                 }
                 inline CreateWindow& BackgroundColor(unsigned r, unsigned g, unsigned b)

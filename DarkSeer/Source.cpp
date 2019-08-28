@@ -4,18 +4,18 @@
 #include <iostream>
 #include <thread>
 
+#include "Utility/Console.h"
+#include "Utility/Engine.h"
 #include "Utility/EngineWindows.h"
 #include "Utility/Math.h"
 #include "Utility/RawInput.h"
-#include "Utility/Console.h"
-#include "Utility/Engine.h"
 
 // DirectX 12 specific headers.
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <d3dcompiler.h>
 #include <DirectXMath.h>
- 
+#include <d3d12.h>
+#include <d3dcompiler.h>
+#include <dxgi1_6.h>
+
 // D3D12 extension library.
 #include "3rdParty/d3dx12.h"
 // Windows Runtime Library. Needed for Microsoft::WRL::ComPtr<> template class.
@@ -29,7 +29,7 @@ using namespace Microsoft::WRL;
 
 #undef min
 #undef max
-
+#include <vector>
 int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pCmdLine, _In_ int _nCmdShow)
 {
         InitializeConsole();

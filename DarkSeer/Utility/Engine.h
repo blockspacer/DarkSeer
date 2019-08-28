@@ -20,7 +20,7 @@ inline namespace Engine
                         g_inputBuffer.BeginFrame();
                         for (auto& itr : g_inputBuffer)
                         {
-                                const auto [x, y] = itr.m_mouseDeltas;
+                                auto [x, y] = itr.m_mouseDeltas;
 
                                 if (x || y)
                                         std::cout << "[" << x << "," << y << "]\t";
@@ -34,7 +34,7 @@ inline namespace Engine
                                         std::cout << "(" << itr.m_scrollDelta << ")";
                         }
 						
-                        if (g_inputBuffer.begin() != g_inputBuffer.end())
+                        if (!g_inputBuffer.empty())
                                 std::cout << std::endl;
                 }
 

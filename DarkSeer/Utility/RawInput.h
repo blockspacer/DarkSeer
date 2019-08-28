@@ -3,11 +3,11 @@
 #include <Windows.h>
 #include <stdint.h>
 #include <atomic>
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <numeric>
 #include <tuple>
-#include <cassert>
 #include "Math.h"
 #include "MemoryDefines.h"
 
@@ -74,6 +74,10 @@ inline namespace RawInput
 #define ENUM(E, V) bool INPUT_##E : 1;
                 struct KeyState
                 {
+                        inline KeyState()
+                        {
+                                memset(this, 0, sizeof(this));
+                        }
                         static constexpr auto _SZ64 = 48 /*sizeof(Key)*/ / sizeof(uint64_t);
 #include "SCANCODES_FLAG0.ENUM"
 #include "SCANCODES_FLAG1.ENUM"
@@ -113,67 +117,34 @@ inline namespace RawInput
                 int16_t                m_scrollDelta;     //				2	B
                 TransitionState        m_transitionState; // up or down //	1	B
                 char                   m_padding[3];
+
+                InputFrame() :
+                    m_pressState(),
+                    m_mouseDeltas(),
+                    m_buttonSignature(),
+                    m_scrollDelta(),
+                    m_transitionState(),
+                    m_padding()
+                {}
         };
 
         struct InputBuffer
         {
-            private:
-                //================================================================
-                // Multithreaded Circular Buffer (Single Producer - Single Consumer)
-                static constexpr uint64_t MAX_INPUT_FRAMES_PER_FRAME = saturatePowerOf2(10000U);
-                static constexpr uint64_t MASK                       = MAX_INPUT_FRAMES_PER_FRAME - 1;
-                InputFrame*               m_inputFrames;
-                volatile int64_t          m_bottom;
-                volatile int64_t          m_top;
-
-                KeyState                  m_lastPressState;
-                //================================================================
-                // Wnd proc
-                WNDPROC        m_parentWndProc;
-                HWND           m_parentHWND;
-                static LRESULT CALLBACK InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam);
-                //================================================================
-                // range loop
-                const int64_t m_currFrameBottom;
-                const int64_t m_currFrametop;
-
             public:
-                //================================================================
-                InputBuffer();
-                void Initialize(HWND hwnd);
-                void ShutDown();
-                //================================================================
-                // producer thread access
-                void Push(InputFrame inputFrame);
-                //================================================================
-                // consumer thread access
-                void            BeginFrame();
-
                 struct iterator
                 {
                     private:
-                        using iterator_category = std::random_access_iterator_tag;
-                        using value_type        = InputFrame;
-                        using difference_type   = int64_t;
-                        using pointer           = InputFrame*;
-                        using reference         = InputFrame&;
+                        using value_type      = InputFrame;
+                        using difference_type = int64_t;
+                        using pointer         = InputFrame*;
+                        using reference       = InputFrame&;
 
-                        const InputFrame*& m_ownerInputFramesAlias;
-                        const int64_t      m_top;
-                        const int64_t      m_bottom;
+                        const InputBuffer& m_owner;
                         int64_t            m_currIndex;
 
-                        inline iterator(const InputFrame*& ownerInputFrames, int64_t top, int64_t bottom, int64_t index) :
-                            m_ownerInputFramesAlias(ownerInputFrames),
-                            m_top(top),
-                            m_bottom(bottom),
-                            m_currIndex(index)
+                        inline iterator(const InputBuffer& owner, int64_t index) : m_owner(owner), m_currIndex(index)
                         {}
-                        inline iterator(const iterator& other) :
-                            m_ownerInputFramesAlias(other.m_ownerInputFramesAlias),
-                            m_top(other.m_top),
-                            m_bottom(other.m_bottom),
-                            m_currIndex(other.m_currIndex)
+                        inline iterator(const iterator& other) : m_owner(other.m_owner), m_currIndex(other.m_currIndex)
                         {}
 
                     public:
@@ -201,7 +172,6 @@ inline namespace RawInput
                                 m_currIndex--;
                                 return temp;
                         }
-                        //
                         inline iterator& operator+=(int64_t offset)
                         {
                                 m_currIndex += offset;
@@ -214,16 +184,23 @@ inline namespace RawInput
                         }
                         inline iterator operator-(int64_t rhs) const
                         {
-                                return iterator(m_ownerInputFramesAlias, m_top, m_bottom, m_currIndex - rhs);
+                                return iterator(m_owner, m_currIndex - rhs);
                         }
                         inline iterator operator+(int64_t rhs) const
                         {
-                                return iterator(m_ownerInputFramesAlias, m_top, m_bottom, m_currIndex + rhs);
+                                return iterator(m_owner, m_currIndex + rhs);
                         }
-                        const InputFrame& operator*() const
+                        inline const InputFrame& operator*() const
                         {
-                                assert(m_currIndex >= m_top && m_currIndex <= m_bottom);
-                                return m_ownerInputFramesAlias[InputBuffer::MASK & m_currIndex];
+                                return m_owner.m_inputFrames[InputBuffer::MASK & m_currIndex];
+                        }
+                        inline const InputFrame* operator->() const
+                        {
+                                return &m_owner.m_inputFrames[InputBuffer::MASK & m_currIndex];
+                        }
+                        inline bool operator==(const iterator& other) const
+                        {
+                                return m_currIndex == other.m_currIndex;
                         }
                         inline bool operator!=(const iterator& other) const
                         {
@@ -245,22 +222,59 @@ inline namespace RawInput
                         {
                                 return m_currIndex > other.m_currIndex;
                         }
-                        friend class InputBuffer;
+                        friend struct InputBuffer;
                 };
+
+            private:
+                //================================================================
+                // Multithreaded Circular Buffer (Single Producer - Single Consumer)
+                static constexpr uint64_t MAX_INPUT_FRAMES_PER_FRAME = saturatePowerOf2(10000U);
+                static constexpr uint64_t MASK                       = MAX_INPUT_FRAMES_PER_FRAME - 1;
+                InputFrame*               m_inputFrames;
+                volatile int64_t          m_bottom;
+                volatile int64_t          m_top;
+
+                KeyState m_lastPressState;
+                //================================================================
+                // Wnd proc
+                WNDPROC        m_parentWndProc;
+                HWND           m_parentHWND;
+                static LRESULT CALLBACK InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam);
+                //================================================================
+                // range loop
+                const int64_t m_currFrameBottom;
+                const int64_t m_currFrametop;
+
+            public:
+                //================================================================
+                InputBuffer();
+                void Initialize(HWND hwnd);
+                void ShutDown();
+                //================================================================
+                // producer thread access
+                void push_back(InputFrame inputFrame);
+                void emplace_back(std::tuple<long, long> mouseDeltas,
+                                  ButtonSignature        buttonSignature,
+                                  int16_t                scrollDelta,
+                                  TransitionState        transitionState);
+                //================================================================
+                // consumer thread access
+                void BeginFrame();
+
                 inline iterator begin() const
                 {
-                        return iterator(
-                            const_cast<const InputFrame*&>(m_inputFrames), m_currFrametop, m_currFrameBottom, m_currFrametop);
+                        return iterator(*this, m_currFrametop);
                 }
                 inline iterator end() const
                 {
-                        return iterator(const_cast<const InputFrame*&>(m_inputFrames),
-                                        m_currFrametop,
-                                        m_currFrameBottom,
-                                        m_currFrameBottom);
+                        return iterator(*this, m_currFrameBottom);
+                }
+                inline bool empty() const
+                {
+                        return begin() == end();
                 }
 
-				// previous consumer function, kept for reference
+                // previous consumer function, kept for reference
                 [[deprecated]] void ProcessAll();
                 //================================================================
         };
