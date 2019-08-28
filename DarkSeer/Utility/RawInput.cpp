@@ -2,21 +2,19 @@
 #include <Windows.h>
 #include <assert.h>
 #include <commctrl.h>
-RawInput::InputBuffer::InputBuffer() : m_currentInputRange(const_cast<const InputFrame*&>(m_inputFrames), m_bottom, m_top)
+RawInput::InputBuffer::InputBuffer() : m_currFrameBottom(m_bottom), m_currFrametop(m_top)
 {}
 
 void RawInput::InputBuffer::Initialize(HWND hwnd)
 {
-        memset(&m_lastPressState, 0, sizeof(m_lastPressState));
-
         m_inputFrames = (InputFrame*)_aligned_malloc(sizeof(InputFrame) * MAX_INPUT_FRAMES_PER_FRAME, 64);
         m_bottom      = 0;
         m_top         = 0;
 
+        memset(&m_lastPressState, 0, sizeof(m_lastPressState));
+
         m_parentHWND = hwnd;
-
         m_parentWndProc = (decltype(m_parentWndProc))SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)InputBuffer::InputWndProc);
-
         SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 }
 
@@ -79,13 +77,9 @@ void RawInput::InputBuffer::ProcessAll()
 
 void RawInput::InputBuffer::BeginFrame()
 {
-        m_top = m_currentInputRange.m_bottom;
-        m_currentInputRange.Update(m_bottom, m_top);
-}
-
-RawInput::InputBuffer::range RawInput::InputBuffer::GetInputFrames()
-{
-        return m_currentInputRange;
+        m_top = m_currFrameBottom;
+		const_cast<int64_t&>(m_currFrameBottom)= m_bottom;
+        const_cast<int64_t&>(m_currFrametop) = m_top;
 }
 
 LRESULT CALLBACK InputBuffer::InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam)

@@ -18,10 +18,9 @@ inline namespace Engine
                 while (!g_engineShutdown)
                 {
                         g_inputBuffer.BeginFrame();
-                        auto inputFrames = g_inputBuffer.GetInputFrames();
-                        for (auto& itr : inputFrames)
+                        for (auto& itr : g_inputBuffer)
                         {
-                                auto [x, y] = itr.m_mouseDeltas;
+                                const auto [x, y] = itr.m_mouseDeltas;
 
                                 if (x || y)
                                         std::cout << "[" << x << "," << y << "]\t";
@@ -34,10 +33,11 @@ inline namespace Engine
                                 if (itr.m_scrollDelta)
                                         std::cout << "(" << itr.m_scrollDelta << ")";
                         }
-
-                        if (inputFrames.GetFrameCount())
+						
+                        if (g_inputBuffer.begin() != g_inputBuffer.end())
                                 std::cout << std::endl;
                 }
+
                 g_frameCounter++;
         }
 

@@ -1,4 +1,5 @@
 #pragma once
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <stdint.h>
 #include <atomic>
@@ -6,6 +7,7 @@
 #include <memory>
 #include <numeric>
 #include <tuple>
+#include <cassert>
 #include "Math.h"
 #include "MemoryDefines.h"
 
@@ -123,113 +125,144 @@ inline namespace RawInput
                 InputFrame*               m_inputFrames;
                 volatile int64_t          m_bottom;
                 volatile int64_t          m_top;
+
+                KeyState                  m_lastPressState;
                 //================================================================
-                KeyState       m_lastPressState;
+                // Wnd proc
                 WNDPROC        m_parentWndProc;
                 HWND           m_parentHWND;
                 static LRESULT CALLBACK InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam);
+                //================================================================
+                // range loop
+                const int64_t m_currFrameBottom;
+                const int64_t m_currFrametop;
 
             public:
-                struct range
+                //================================================================
+                InputBuffer();
+                void Initialize(HWND hwnd);
+                void ShutDown();
+                //================================================================
+                // producer thread access
+                void Push(InputFrame inputFrame);
+                //================================================================
+                // consumer thread access
+                void            BeginFrame();
+
+                struct iterator
                 {
                     private:
-                        const InputFrame*& m_inputFramesAlias;
-                        const int64_t m_bottom;
-                        const int64_t m_top;
-						void Update(volatile int64_t bottom, volatile int64_t top)
-						{
-                                const_cast<int64_t&>(m_top) = top;
-                                const_cast<int64_t&>(m_bottom) = bottom;
-						}
-                    public:
-                        range(const InputFrame*& inputFrames, volatile int64_t bottom, volatile int64_t& top) :
-                            m_inputFramesAlias(inputFrames),
+                        using iterator_category = std::random_access_iterator_tag;
+                        using value_type        = InputFrame;
+                        using difference_type   = int64_t;
+                        using pointer           = InputFrame*;
+                        using reference         = InputFrame&;
+
+                        const InputFrame*& m_ownerInputFramesAlias;
+                        const int64_t      m_top;
+                        const int64_t      m_bottom;
+                        int64_t            m_currIndex;
+
+                        inline iterator(const InputFrame*& ownerInputFrames, int64_t top, int64_t bottom, int64_t index) :
+                            m_ownerInputFramesAlias(ownerInputFrames),
+                            m_top(top),
                             m_bottom(bottom),
-                            m_top(top)
+                            m_currIndex(index)
                         {}
-                        struct iterator
-                        {
-                                using iterator_category = std::random_access_iterator_tag;
-                                using value_type        = InputFrame;
-                                using difference_type   = int64_t;
-                                using pointer           = InputFrame*;
-                                using reference         = InputFrame&;
+                        inline iterator(const iterator& other) :
+                            m_ownerInputFramesAlias(other.m_ownerInputFramesAlias),
+                            m_top(other.m_top),
+                            m_bottom(other.m_bottom),
+                            m_currIndex(other.m_currIndex)
+                        {}
 
-                                const InputFrame*& m_ownerInputFramesAlias;
-                                const int64_t      m_top;
-                                const int64_t      m_bottom;
-                                int64_t            m_currIndex;
-
-                                inline iterator(const InputFrame*& ownerInputFrames,
-                                                int64_t            top,
-                                                int64_t            bottom,
-                                                int64_t            index) :
-                                    m_ownerInputFramesAlias(ownerInputFrames),
-                                    m_top(top),
-                                    m_bottom(bottom),
-                                    m_currIndex(index)
-                                {}
-                                inline iterator(const iterator& other) :
-                                    m_ownerInputFramesAlias(other.m_ownerInputFramesAlias),
-                                    m_top(other.m_top),
-                                    m_bottom(other.m_bottom),
-                                    m_currIndex(other.m_currIndex)
-                                {}
-                                // prefix
-                                inline iterator& operator++()
-                                {
-                                        m_currIndex++;
-                                        return *this;
-                                }
-                                // postfix
-                                inline iterator& operator++(int)
-                                {
-                                        auto temp = iterator(*this);
-                                        m_currIndex++;
-                                        return temp;
-                                }
-                                const InputFrame& operator*() const
-                                {
-                                        return m_ownerInputFramesAlias[InputBuffer::MASK & m_currIndex];
-                                }
-                                inline bool operator!=(const iterator& other) const
-                                {
-                                        return m_currIndex != other.m_currIndex;
-                                }
-                        };
-                        inline iterator begin() const
+                    public:
+                        // prefix
+                        inline iterator& operator++()
                         {
-                                return iterator(m_inputFramesAlias, m_top, m_bottom, m_top);
+                                m_currIndex++;
+                                return *this;
                         }
-                        inline iterator end() const
+                        inline iterator& operator--()
                         {
-                                return iterator(m_inputFramesAlias, m_top, m_bottom, m_bottom);
+                                m_currIndex--;
+                                return *this;
                         }
-                        inline int64_t GetFrameCount() const
+                        // postfix
+                        inline iterator operator++(int)
                         {
-                                return m_bottom - m_top;
+                                auto temp = iterator(*this);
+                                m_currIndex++;
+                                return temp;
                         }
-
+                        inline iterator operator--(int)
+                        {
+                                auto temp = iterator(*this);
+                                m_currIndex--;
+                                return temp;
+                        }
+                        //
+                        inline iterator& operator+=(int64_t offset)
+                        {
+                                m_currIndex += offset;
+                                return *this;
+                        }
+                        inline iterator& operator-=(int64_t offset)
+                        {
+                                m_currIndex -= offset;
+                                return *this;
+                        }
+                        inline iterator operator-(int64_t rhs) const
+                        {
+                                return iterator(m_ownerInputFramesAlias, m_top, m_bottom, m_currIndex - rhs);
+                        }
+                        inline iterator operator+(int64_t rhs) const
+                        {
+                                return iterator(m_ownerInputFramesAlias, m_top, m_bottom, m_currIndex + rhs);
+                        }
+                        const InputFrame& operator*() const
+                        {
+                                assert(m_currIndex >= m_top && m_currIndex <= m_bottom);
+                                return m_ownerInputFramesAlias[InputBuffer::MASK & m_currIndex];
+                        }
+                        inline bool operator!=(const iterator& other) const
+                        {
+                                return m_currIndex != other.m_currIndex;
+                        }
+                        inline bool operator<=(const iterator& other) const
+                        {
+                                return m_currIndex <= other.m_currIndex;
+                        }
+                        inline bool operator>=(const iterator& other) const
+                        {
+                                return m_currIndex >= other.m_currIndex;
+                        }
+                        inline bool operator<(const iterator& other) const
+                        {
+                                return m_currIndex < other.m_currIndex;
+                        }
+                        inline bool operator>(const iterator& other) const
+                        {
+                                return m_currIndex > other.m_currIndex;
+                        }
                         friend class InputBuffer;
                 };
+                inline iterator begin() const
+                {
+                        return iterator(
+                            const_cast<const InputFrame*&>(m_inputFrames), m_currFrametop, m_currFrameBottom, m_currFrametop);
+                }
+                inline iterator end() const
+                {
+                        return iterator(const_cast<const InputFrame*&>(m_inputFrames),
+                                        m_currFrametop,
+                                        m_currFrameBottom,
+                                        m_currFrameBottom);
+                }
 
-            private:
-                range m_currentInputRange;
-
-            public:
-                InputBuffer();
-
-                void Initialize(HWND hwnd);
-
-                void ShutDown();
-
-                void Push(InputFrame inputFrame);
-
+				// previous consumer function, kept for reference
                 [[deprecated]] void ProcessAll();
-
-                void BeginFrame();
-
-                range GetInputFrames();
+                //================================================================
         };
 
         inline namespace Globals
