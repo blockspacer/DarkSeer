@@ -1,4 +1,4 @@
-#include "RawInput.h"
+#include <RawInput.h>
 
 RawInput::InputBuffer::InputBuffer() :
     m_inputFrames(),
