@@ -1,13 +1,5 @@
 #pragma once
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include "TaggedIntegrals.h"
-#undef CreateWindow
-#include <cmath>
-#include <string>
-#include <tuple>
-
-inline namespace Windows
+inline namespace EngineWindows
 {
         inline namespace Globals
         {

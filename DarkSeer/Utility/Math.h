@@ -1,7 +1,6 @@
 #pragma once
 #include <intrin.h>
-#include <type_traits>
-#include <tuple>
+
 inline namespace Math
 {
         inline unsigned Accumulate(const __m256i* const buffer, unsigned sz)

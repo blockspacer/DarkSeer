@@ -1,13 +1,9 @@
 #include "RawInput.h"
-#include <Windows.h>
-#include <assert.h>
-#include <commctrl.h>
 
 RawInput::InputBuffer::InputBuffer() :
     m_inputFrames(),
     m_bottom(),
     m_top(),
-    m_lastPressState(),
     m_parentWndProc(),
     m_parentHWND(),
     m_currFrameBottom(),
@@ -17,10 +13,12 @@ RawInput::InputBuffer::InputBuffer() :
 void RawInput::InputBuffer::Initialize(HWND hwnd)
 {
         m_inputFrames = (InputFrame*)_aligned_malloc(sizeof(InputFrame) * MAX_INPUT_FRAMES_PER_FRAME, 64);
-        m_bottom      = 0;
-        m_top         = 0;
+        assert(m_inputFrames);
+        m_bottom = 0;
+        m_top    = 0;
 
-        memset(&m_lastPressState, 0, sizeof(m_lastPressState));
+#pragma warning(suppress : 6385)
+        memset(&m_inputFrames[-1 & MASK].m_pressState, 0, sizeof(KeyState));
 
         m_parentHWND    = hwnd;
         m_parentWndProc = (decltype(m_parentWndProc))SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)InputBuffer::InputWndProc);
@@ -36,14 +34,13 @@ void RawInput::InputBuffer::push_back(InputFrame inputFrame)
 {
         switch (inputFrame.m_transitionState)
         {
-                case TransitionState::INPUT_transitionStateUp:
+                case TransitionState::Up:
                         inputFrame.m_pressState.KeyUp(inputFrame.m_buttonSignature);
                         break;
-                case TransitionState::INPUT_transitionStateDown:
+                case TransitionState::Down:
                         inputFrame.m_pressState.KeyDown(inputFrame.m_buttonSignature);
                         break;
         }
-        m_lastPressState = inputFrame.m_pressState;
 
         const auto b = m_bottom;
         while (b - m_top >= MAX_INPUT_FRAMES_PER_FRAME)
@@ -58,7 +55,7 @@ void RawInput::InputBuffer::push_back(InputFrame inputFrame)
 }
 
 void RawInput::InputBuffer::emplace_back(std::tuple<long, long> mouseDeltas,
-                                         ButtonSignature        buttonSignature,
+                                         KeyCode                buttonSignature,
                                          int16_t                scrollDelta,
                                          TransitionState        transitionState)
 {
@@ -71,10 +68,10 @@ void RawInput::InputBuffer::emplace_back(std::tuple<long, long> mouseDeltas,
         inputFramesCurrent.m_pressState       = inputFramesPrevious.m_pressState;
         switch (transitionState)
         {
-                case TransitionState::INPUT_transitionStateUp:
+                case TransitionState::Up:
                         inputFramesCurrent.m_pressState.KeyUp(buttonSignature);
                         break;
-                case TransitionState::INPUT_transitionStateDown:
+                case TransitionState::Down:
                         inputFramesCurrent.m_pressState.KeyDown(buttonSignature);
                         break;
         }
@@ -100,10 +97,10 @@ void RawInput::InputBuffer::ProcessAll()
 
                 if (x || y)
                         std::cout << "[" << x << "," << y << "]\t";
-                if (inputFrame.m_buttonSignature)
+                if (to_integral(inputFrame.m_buttonSignature))
                 {
-                        std::cout << buttonSignatureToString[inputFrame.m_buttonSignature] << "("
-                                  << transitionStateToString[inputFrame.m_transitionState] << ")"
+                        std::cout << buttonSignatureToString[to_integral(inputFrame.m_buttonSignature)] << "("
+                                  << transitionStateToString[to_integral(inputFrame.m_transitionState)] << ")"
                                   << "\t";
                 }
                 if (inputFrame.m_scrollDelta)
@@ -115,7 +112,7 @@ void RawInput::InputBuffer::ProcessAll()
         m_top = b;
 }
 
-void RawInput::InputBuffer::BeginFrame()
+void RawInput::InputBuffer::Signal()
 {
         m_top                                   = m_currFrameBottom;
         const_cast<int64_t&>(m_currFrameBottom) = m_bottom;
@@ -126,7 +123,7 @@ LRESULT CALLBACK InputBuffer::InputWndProc(_In_ HWND hwnd, _In_ UINT message, _I
 {
         InputFrame inputFrame;
         memset(((char*)&inputFrame) + sizeof(KeyState), 0, sizeof(InputFrame) - sizeof(KeyState));
-        inputFrame.m_pressState = g_inputBuffer.m_lastPressState;
+        inputFrame.m_pressState = g_inputBuffer.back().m_pressState;
 
         switch (message)
         {
@@ -140,10 +137,11 @@ LRESULT CALLBACK InputBuffer::InputWndProc(_In_ HWND hwnd, _In_ UINT message, _I
                         if (rawInputFrame.header.dwType == RIM_TYPEKEYBOARD)
                         {
                                 uint16_t        button_signature_flag = rawInputFrame.data.keyboard.Flags >> 1;
-                                TransitionState transition_state = (TransitionState)(rawInputFrame.data.keyboard.Flags & 1);
+                                TransitionState transition_state =
+                                    static_cast<TransitionState>(rawInputFrame.data.keyboard.Flags & 1);
                                 inputFrame.m_buttonSignature =
-                                    (ButtonSignature)(rawInputFrame.data.keyboard.MakeCode +
-                                                      button_signature_flag * INPUT_NUM_KEYBOARD_SCANCODES);
+                                    static_cast<KeyCode>(rawInputFrame.data.keyboard.MakeCode +
+                                                         button_signature_flag * INPUT_NUM_KEYBOARD_SCANCODES);
                                 inputFrame.m_transitionState = transition_state;
 
                                 g_inputBuffer.push_back(inputFrame);
@@ -174,53 +172,53 @@ LRESULT CALLBACK InputBuffer::InputWndProc(_In_ HWND hwnd, _In_ UINT message, _I
                 }
                 case WM_LBUTTONDOWN:
                 {
-                        inputFrame.m_buttonSignature = INPUT_mouseLeft;
+                        inputFrame.m_buttonSignature = KeyCode::mouseLeft;
                         g_inputBuffer.push_back(inputFrame);
                         break;
                 }
                 case WM_LBUTTONUP:
                 {
-                        inputFrame.m_buttonSignature = INPUT_mouseLeft;
-                        inputFrame.m_transitionState = INPUT_transitionStateUp;
+                        inputFrame.m_buttonSignature = KeyCode::mouseLeft;
+                        inputFrame.m_transitionState = TransitionState::Up;
                         g_inputBuffer.push_back(inputFrame);
                         break;
                 }
                 case WM_RBUTTONDOWN:
                 {
-                        inputFrame.m_buttonSignature = INPUT_mouseRight;
+                        inputFrame.m_buttonSignature = KeyCode::mouseRight;
                         g_inputBuffer.push_back(inputFrame);
                         break;
                 }
                 case WM_RBUTTONUP:
                 {
-                        inputFrame.m_buttonSignature = INPUT_mouseRight;
-                        inputFrame.m_transitionState = INPUT_transitionStateUp;
+                        inputFrame.m_buttonSignature = KeyCode::mouseRight;
+                        inputFrame.m_transitionState = TransitionState::Up;
                         g_inputBuffer.push_back(inputFrame);
                         break;
                 }
                 case WM_MBUTTONDOWN:
                 {
-                        inputFrame.m_buttonSignature = INPUT_mouseMiddle;
+                        inputFrame.m_buttonSignature = KeyCode::mouseMiddle;
                         g_inputBuffer.push_back(inputFrame);
                         break;
                 }
                 case WM_MBUTTONUP:
                 {
-                        inputFrame.m_buttonSignature = INPUT_mouseMiddle;
-                        inputFrame.m_transitionState = INPUT_transitionStateUp;
+                        inputFrame.m_buttonSignature = KeyCode::mouseMiddle;
+                        inputFrame.m_transitionState = TransitionState::Up;
                         g_inputBuffer.push_back(inputFrame);
                         break;
                 }
                 case WM_MOUSEWHEEL:
                 {
-                        inputFrame.m_buttonSignature = INPUT_mouseScrollVertical;
+                        inputFrame.m_buttonSignature = KeyCode::mouseScrollVertical;
                         inputFrame.m_scrollDelta     = GET_WHEEL_DELTA_WPARAM(wParam);
                         g_inputBuffer.push_back(inputFrame);
                         break;
                 }
                 case WM_MOUSEHWHEEL:
                 {
-                        inputFrame.m_buttonSignature = INPUT_mouseScrollHorizontal;
+                        inputFrame.m_buttonSignature = KeyCode::mouseScrollHorizontal;
                         inputFrame.m_scrollDelta     = GET_WHEEL_DELTA_WPARAM(wParam);
                         g_inputBuffer.push_back(inputFrame);
                         break;
@@ -231,13 +229,13 @@ LRESULT CALLBACK InputBuffer::InputWndProc(_In_ HWND hwnd, _In_ UINT message, _I
                         {
                                 case XBUTTON1:
                                 {
-                                        inputFrame.m_buttonSignature = INPUT_mouseForward;
+                                        inputFrame.m_buttonSignature = KeyCode::mouseForward;
                                         g_inputBuffer.push_back(inputFrame);
                                         break;
                                 }
                                 case XBUTTON2:
                                 {
-                                        inputFrame.m_buttonSignature = INPUT_mouseBack;
+                                        inputFrame.m_buttonSignature = KeyCode::mouseBack;
                                         g_inputBuffer.push_back(inputFrame);
                                         break;
                                 }
@@ -250,15 +248,15 @@ LRESULT CALLBACK InputBuffer::InputWndProc(_In_ HWND hwnd, _In_ UINT message, _I
                         {
                                 case XBUTTON1:
                                 {
-                                        inputFrame.m_buttonSignature = INPUT_mouseForward;
-                                        inputFrame.m_transitionState = INPUT_transitionStateUp;
+                                        inputFrame.m_buttonSignature = KeyCode::mouseForward;
+                                        inputFrame.m_transitionState = TransitionState::Up;
                                         g_inputBuffer.push_back(inputFrame);
                                         break;
                                 }
                                 case XBUTTON2:
                                 {
-                                        inputFrame.m_buttonSignature = INPUT_mouseBack;
-                                        inputFrame.m_transitionState = INPUT_transitionStateUp;
+                                        inputFrame.m_buttonSignature = KeyCode::mouseBack;
+                                        inputFrame.m_transitionState = TransitionState::Up;
                                         g_inputBuffer.push_back(inputFrame);
                                         break;
                                 }
@@ -269,7 +267,6 @@ LRESULT CALLBACK InputBuffer::InputWndProc(_In_ HWND hwnd, _In_ UINT message, _I
                 {
                         // set all press states to released
                         memset(&inputFrame.m_pressState, 0, sizeof(inputFrame.m_pressState));
-                        g_inputBuffer.m_lastPressState = inputFrame.m_pressState;
                         g_inputBuffer.push_back(inputFrame);
                         break;
                 }

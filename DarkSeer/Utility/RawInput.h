@@ -1,13 +1,4 @@
 #pragma once
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <stdint.h>
-#include <atomic>
-#include <cassert>
-#include <iostream>
-#include <memory>
-#include <numeric>
-#include <tuple>
 #include "Math.h"
 #include "MemoryDefines.h"
 
@@ -35,85 +26,11 @@ inline namespace RawInput
                 }
         }
 
-        inline namespace Enums
-        {
-#undef ENUM
-#define ENUM(E, V) INPUT_##E,
-                // dummy enum to get number of mouse signatures
-                enum class DummyEnum
-                {
-#include "MOUSE_SCANCODES.ENUM"
-                        NUM_MOUSE_SIGNATURES
-                };
-#undef ENUM
-#define ENUM(E, V) INPUT_##E,
-                enum ButtonSignature : uint16_t
-                {
-#include "SCANCODES_FLAG0.ENUM"
-#include "SCANCODES_FLAG1.ENUM"
-#include "SCANCODES_FLAG2.ENUM"
-
-#include "MOUSE_SCANCODES.ENUM"
-                        INPUT_NUM_SCANCODE_SIGNATURES
-                };
-#undef ENUM
-                constexpr uint8_t  INPUT_NUM_MOUSE_SCANCODES = (uint8_t)DummyEnum::NUM_MOUSE_SIGNATURES;
-                constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES =
-                    INPUT_NUM_SCANCODE_SIGNATURES - INPUT_NUM_MOUSE_SCANCODES;
-                constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODES = INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES / 3;
-#define ENUM(E, V) #E,
-                constexpr const char* buttonSignatureToString[INPUT_NUM_SCANCODE_SIGNATURES + 1]{
-#include "SCANCODES_FLAG0.ENUM"
-#include "SCANCODES_FLAG1.ENUM"
-#include "SCANCODES_FLAG2.ENUM"
-
-#include "MOUSE_SCANCODES.ENUM"
-                    "INPUT_NUM_SCANCODE_SIGNATURE_ENUMS"};
-#undef ENUM
-
-#define ENUM(E, V) bool INPUT_##E : 1;
-                struct KeyState
-                {
-                        inline KeyState()
-                        {
-                                memset(this, 0, sizeof(this));
-                        }
-                        static constexpr auto _SZ64 = 48 /*sizeof(Key)*/ / sizeof(uint64_t);
-#include "SCANCODES_FLAG0.ENUM"
-#include "SCANCODES_FLAG1.ENUM"
-#include "SCANCODES_FLAG2.ENUM"
-
-#include "MOUSE_SCANCODES.ENUM"
-
-                        inline void KeyDown(ButtonSignature button)
-                        {
-                                uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
-                                uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
-                                pressStateAlias[button >> 6] |= mask;
-                        }
-                        inline void KeyUp(ButtonSignature button)
-                        {
-                                uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
-                                uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
-                                pressStateAlias[button >> 6] &= ~mask;
-                        }
-                };
-#undef ENUM
-                // must be size 2 bytes to use the Transition state to store scroll delta if scroll button signature is set
-                enum TransitionState : int8_t
-                {
-                        INPUT_transitionStateDown,
-                        INPUT_transitionStateUp,
-                        INPUT_numTransitionStates
-                };
-                constexpr const char* transitionStateToString[INPUT_numTransitionStates]{"down", "up"};
-        } // namespace Enums
-
         struct alignas(CACHE_LINE) InputFrame
         {
                 KeyState               m_pressState;      //				48	B
                 std::tuple<long, long> m_mouseDeltas;     //				8	B
-                ButtonSignature        m_buttonSignature; // buttonId //	2	B
+                KeyCode                m_buttonSignature; // buttonId //	2	B
                 int16_t                m_scrollDelta;     //				2	B
                 TransitionState        m_transitionState; // up or down //	1	B
                 char                   m_padding[3];
@@ -233,8 +150,6 @@ inline namespace RawInput
                 InputFrame*               m_inputFrames;
                 volatile int64_t          m_bottom;
                 volatile int64_t          m_top;
-
-                KeyState m_lastPressState;
                 //================================================================
                 // Wnd proc
                 WNDPROC        m_parentWndProc;
@@ -254,12 +169,12 @@ inline namespace RawInput
                 // producer thread access
                 void push_back(InputFrame inputFrame);
                 void emplace_back(std::tuple<long, long> mouseDeltas,
-                                  ButtonSignature        buttonSignature,
+                                  KeyCode                buttonSignature,
                                   int16_t                scrollDelta,
                                   TransitionState        transitionState);
                 //================================================================
                 // consumer thread access
-                void BeginFrame();
+                void Signal();
 
                 inline iterator begin() const
                 {
@@ -276,6 +191,12 @@ inline namespace RawInput
 
                 // previous consumer function, kept for reference
                 [[deprecated]] void ProcessAll();
+
+            private:
+                inline InputFrame& back()
+                {
+                        return m_inputFrames[m_bottom - 1 & MASK];
+                }
                 //================================================================
         };
 

@@ -1,6 +1,6 @@
 #include "EngineWindows.h"
 
-inline namespace Windows
+inline namespace EngineWindows
 {
         inline namespace Globals
         {

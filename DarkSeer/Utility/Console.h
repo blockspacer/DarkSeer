@@ -1,14 +1,13 @@
 #pragma once
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
-#include <iostream>
 inline namespace Console
 {
         inline void InitializeConsole()
         {
                 AllocConsole();
-                auto success = freopen("CONOUT$", "w", stdout);
+                bool success;
+                success = freopen("CONOUT$", "w", stdout);
+                success = freopen("CONIN$", "r", stdin);
+                success = freopen("CONOUT$", "w", stderr);
         }
         inline void DisableQuickEdit()
         {
