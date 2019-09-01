@@ -1,9 +1,7 @@
-#include "stdafx.h"
-
-#include "Utility/Console.h" 
-#include "Utility/EngineWindows.h"
-#include "Utility/RawInput.h"
-#include "Utility/Engine.h"
+#include <Console.h>
+#include <EngineWindows.h>
+#include <RawInput.h>
+#include <Engine.h>
 
 int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pCmdLine, _In_ int _nCmdShow)
 {

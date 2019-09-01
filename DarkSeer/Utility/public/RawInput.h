@@ -1,6 +1,5 @@
 #pragma once
-#include "Math.h"
-#include "MemoryDefines.h"
+#include <MemoryDefines.h>
 
 inline namespace RawInput
 {

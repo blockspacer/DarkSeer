@@ -1,5 +1,5 @@
 #pragma once
-#include "RawInput.h"
+#include <RawInput.h>
                                              
 inline namespace Engine
 {
@@ -38,12 +38,14 @@ inline namespace Engine
                                 if (itr.m_pressState.ShiftLeft && itr.m_buttonSignature == KeyCode::C && itr.m_transitionState == TransitionState::Down && !consoleActivated)
                                 {
                                         consoleActivated = true;
-                                        std::cin.clear();
-                                        std::cin.ignore(std::numeric_limits<std::streamsize>::max());
+                                        //std::cin.clear();
+                                        //std::cin.ignore(std::numeric_limits<std::streamsize>::max());
 
                                         std::cout << "enter vector values:\n";
                                         float vector[3];
                                         std::cout << "x:";
+                                        auto test = std::cin.gcount();
+                                        auto test2 = std::cin.end;
                                         std::cin >> vector[0];
                                         std::cout << "y:";
                                         std::cin >> vector[1];

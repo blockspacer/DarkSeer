@@ -6,18 +6,18 @@ inline namespace Enums
         // dummy enum to get number of mouse signatures
         enum class DummyMouseCodesEnum
         {
-#include "Enums/MOUSE_SCANCODES.ENUM"
+#include <Enums/MOUSE_SCANCODES.ENUM>
                 COUNT
         };
 #undef ENUM
 #define ENUM(E, V) E,
         enum class KeyCode : uint16_t
         {
-#include "Enums/SCANCODES_FLAG0.ENUM"
-#include "Enums/SCANCODES_FLAG1.ENUM"
-#include "Enums/SCANCODES_FLAG2.ENUM"
+#include <Enums/SCANCODES_FLAG0.ENUM>
+#include <Enums/SCANCODES_FLAG1.ENUM>
+#include <Enums/SCANCODES_FLAG2.ENUM>
 
-#include "Enums/MOUSE_SCANCODES.ENUM"
+#include <Enums/MOUSE_SCANCODES.ENUM>
                 COUNT
         };
 #undef ENUM
@@ -26,11 +26,11 @@ inline namespace Enums
         constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODES           = INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES / 3;
 #define ENUM(E, V) #E,
         constexpr const char* buttonSignatureToString[to_integral(KeyCode::COUNT) + 1]{
-#include "Enums/SCANCODES_FLAG0.ENUM"
-#include "Enums/SCANCODES_FLAG1.ENUM"
-#include "Enums/SCANCODES_FLAG2.ENUM"
+#include <Enums/SCANCODES_FLAG0.ENUM>
+#include <Enums/SCANCODES_FLAG1.ENUM>
+#include <Enums/SCANCODES_FLAG2.ENUM>
 
-#include "Enums/MOUSE_SCANCODES.ENUM"
+#include <Enums/MOUSE_SCANCODES.ENUM>
             "KeyCode::COUNT"};
 #undef ENUM
 
@@ -42,11 +42,11 @@ inline namespace Enums
                         memset(this, 0, sizeof(this));
                 }
                 static constexpr auto _SZ64 = 48 /*sizeof(Key)*/ / sizeof(uint64_t);
-#include "Enums/SCANCODES_FLAG0.ENUM"
-#include "Enums/SCANCODES_FLAG1.ENUM"
-#include "Enums/SCANCODES_FLAG2.ENUM"
+#include <Enums/SCANCODES_FLAG0.ENUM>
+#include <Enums/SCANCODES_FLAG1.ENUM>
+#include <Enums/SCANCODES_FLAG2.ENUM>
 
-#include "Enums/MOUSE_SCANCODES.ENUM"
+#include <Enums/MOUSE_SCANCODES.ENUM>
 
                 inline void KeyDown(KeyCode button)
                 {

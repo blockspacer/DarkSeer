@@ -53,6 +53,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <ForcedIncludeFiles>stdafx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <AdditionalIncludeDirectories>$(ProjectDir)/pch/public;$(ProjectDir)/Utility/public;$(ProjectDir)/3rdParty/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -82,29 +83,29 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Source.cpp" />
-    <ClCompile Include="Utility\EngineWindows.cpp" />
-    <ClCompile Include="Utility\RawInput.cpp" />
+    <ClCompile Include="Utility\private\EngineWindows.cpp" />
+    <ClCompile Include="Utility\private\RawInput.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CompileSettings.cmp" />
-    <None Include="Utility\Enums\MOUSE_SCANCODES.ENUM" />
-    <None Include="Utility\Enums\SCANCODES_FLAG1.ENUM" />
-    <None Include="Utility\Enums\SCANCODES_FLAG2.ENUM" />
-    <None Include="Utility\Enums\SCANCODES_FLAG0.ENUM" />
+    <None Include="Utility\public\Enums\MOUSE_SCANCODES.ENUM" />
+    <None Include="Utility\public\Enums\SCANCODES_FLAG1.ENUM" />
+    <None Include="Utility\public\Enums\SCANCODES_FLAG2.ENUM" />
+    <None Include="Utility\public\Enums\SCANCODES_FLAG0.ENUM" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="3rdParty\d3dx12.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="Utility\Console.h" />
-    <ClInclude Include="Utility\Engine.h" />
-    <ClInclude Include="Utility\EngineWindows.h" />
-    <ClInclude Include="Utility\Helpers.h" />
-    <ClInclude Include="Utility\MemoryDefines.h" />
-    <ClInclude Include="Utility\Random.h" />
-    <ClInclude Include="Utility\RawInput.h" />
-    <ClInclude Include="Utility\Math.h" />
-    <ClInclude Include="Utility\Integrals.h" />
-    <ClInclude Include="Utility\RawInputEnums.h" />
+    <ClInclude Include="3rdParty\public\d3dx12.h" />
+    <ClInclude Include="pch\public\stdafx.h" />
+    <ClInclude Include="Utility\public\Console.h" />
+    <ClInclude Include="Utility\public\DSMath.h" />
+    <ClInclude Include="Utility\public\Engine.h" />
+    <ClInclude Include="Utility\public\EngineWindows.h" />
+    <ClInclude Include="Utility\public\Helpers.h" />
+    <ClInclude Include="Utility\public\MemoryDefines.h" />
+    <ClInclude Include="Utility\public\DSRandom.h" />
+    <ClInclude Include="Utility\public\RawInput.h" />
+    <ClInclude Include="Utility\public\TaggedPrimitives.h" />
+    <ClInclude Include="Utility\public\RawInput.Enums.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
