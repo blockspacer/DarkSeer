@@ -81,6 +81,7 @@
   <ItemGroup>
     <ClCompile Include="source\Admin\private\Admin.cpp" />
     <ClCompile Include="source\Components\private\CircularInputBuffer.cpp" />
+    <ClCompile Include="source\Components\private\SingletonInput.cpp" />
     <ClCompile Include="source\PCH\private\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -88,7 +89,6 @@
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\Systems\private\InputSystem.cpp" />
     <ClCompile Include="source\Utility\private\DSWindows.cpp" />
-    <ClCompile Include="source\Components\private\SingletonInput.cpp" />
     <ClCompile Include="source\utility\private\InputUtility.cpp" />
   </ItemGroup>
   <ItemGroup>

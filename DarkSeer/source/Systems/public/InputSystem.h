@@ -2,7 +2,7 @@
 struct InputSystem
 {
     private:
-        void RegisterRawInputDevices();
+        Admin* m_Admin = &g_userAdmin;
     public:
         void Initialize();
         void Shutdown();

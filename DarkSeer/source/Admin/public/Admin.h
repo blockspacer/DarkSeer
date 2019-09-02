@@ -6,9 +6,12 @@ struct Admin
 {
     private:
         SingletonInput* m_singletonInput = 0;
+
+    public:
+        SingletonInput* GetSingletonInput();
+
     public:
         void            Initialize();
         void            Shutdown();
-        SingletonInput* GetSingletonInput();
 };
-inline Admin admin;
+inline Admin g_userAdmin;

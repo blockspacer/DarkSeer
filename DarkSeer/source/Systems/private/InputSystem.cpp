@@ -1,9 +1,5 @@
 #include <InputSystem.h>
-
-void InputSystem::RegisterRawInputDevices()
-{
-
-}
+#include <SingletonInput.h>
 
 void InputSystem::Initialize()
 {}

@@ -1,5 +1,6 @@
 #include <DSWindows.h>
 #include <Engine.h>
+#include <InputUtility.h>
 
 int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pCmdLine, _In_ int _nCmdShow)
 {
@@ -7,12 +8,14 @@ int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pC
         g_pCmdLine  = _pCmdLine;
         g_nCmdShow  = _nCmdShow;
 
-        admin.Initialize();
+        InputUtil::RegisterDefaultRawInputDevices();
+
+        g_userAdmin.Initialize();
 
         // Directx Initialize
         EnableDebugLayer();
-		auto MainAdapter = GetAdapter(false);
-        auto MainDevice = CreateDevice(MainAdapter);
+        auto MainAdapter = GetAdapter(false);
+        auto MainDevice  = CreateDevice(MainAdapter);
 
         LaunchEngine();
         MessageLoop();

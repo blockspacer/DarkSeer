@@ -15,7 +15,6 @@ void Admin::Initialize()
         InitializeConsole();
         Console::DisableQuickEdit();
 
-        RegisterDefaultRawInputDevices();
 
         ECSInitialize();
         m_singletonInput = static_cast<SingletonInput*>(ECSAllocateSingleton(sizeof(SingletonInput)));
