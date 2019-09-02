@@ -31,8 +31,21 @@ inline namespace RawInput
                 std::tuple<long, long> m_mouseDeltas;     //				8	B
                 KeyCode                m_buttonSignature; // buttonId //	2	B
                 int16_t                m_scrollDelta;     //				2	B
-                TransitionState        m_transitionState; // up or down //	1	B
-                char                   m_padding[3];
+                KeyTransition          m_transitionState; // up or down //	1	B
+
+                static constexpr auto  DATA_SIZE = sizeof(m_pressState) + sizeof(m_mouseDeltas) + sizeof(m_buttonSignature) +
+                                                  sizeof(m_scrollDelta) + sizeof(m_transitionState);
+                static_assert(DATA_SIZE <= CACHE_LINE);
+                std::enable_if<DATA_SIZE - CACHE_LINE != 0, char>::type m_padding[CACHE_LINE-DATA_SIZE];
+
+                inline bool IsKeyPress(KeyCode keyCode) const
+                {
+                        return m_buttonSignature == keyCode && m_transitionState == KeyTransition::Down;
+                }
+                inline bool IsKeyRelease(KeyCode keyCode) const
+                {
+                        return m_buttonSignature == keyCode && m_transitionState == KeyTransition::Up;
+                }
 
                 InputFrame() :
                     m_pressState(),
@@ -170,7 +183,7 @@ inline namespace RawInput
                 void emplace_back(std::tuple<long, long> mouseDeltas,
                                   KeyCode                buttonSignature,
                                   int16_t                scrollDelta,
-                                  TransitionState        transitionState);
+                                  KeyTransition          transitionState);
                 //================================================================
                 // consumer thread access
                 void Signal();

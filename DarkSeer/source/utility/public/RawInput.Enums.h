@@ -63,7 +63,7 @@ inline namespace Enums
         };
 #undef ENUM
         // must be size 2 bytes to use the Transition state to store scroll delta if scroll button signature is set
-        enum class TransitionState : int8_t
+        enum class KeyTransition : int8_t
         {
                 Down,
                 Up

@@ -82,12 +82,16 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Source.cpp" />
+    <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\utility\private\DSWindows.cpp" />
     <ClCompile Include="source\utility\private\RawInput.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CompileSettings.cmp" />
+    <CopyFileToFolders Include="dll\d3dcompiler_47.dll">
+      <FileType>Document</FileType>
+      <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)dll</DestinationFolders>
+    </CopyFileToFolders>
     <None Include="source\utility\public\Enums\MOUSE_SCANCODES.ENUM" />
     <None Include="source\utility\public\Enums\SCANCODES_FLAG1.ENUM" />
     <None Include="source\utility\public\Enums\SCANCODES_FLAG2.ENUM" />
@@ -100,7 +104,7 @@
     <ClInclude Include="source\utility\public\DSMath.h" />
     <ClInclude Include="source\utility\public\Engine.h" />
     <ClInclude Include="source\utility\public\DSWindows.h" />
-    <ClInclude Include="source\utility\public\Helpers.h" />
+    <ClInclude Include="source\utility\public\DirectXHelpers.h" />
     <ClInclude Include="source\utility\public\MemoryDefines.h" />
     <ClInclude Include="source\utility\public\DSRandom.h" />
     <ClInclude Include="source\utility\public\RawInput.h" />

@@ -18,12 +18,16 @@
 #include <memory>
 #include <random>
 #include <intrin.h>
+#include <string>
+#include <sstream>
 
 //directx12
 #include <DirectXMath.h>
 #include <d3d12.h>
 #include <d3dcompiler.h>
 #include <dxgi1_6.h>
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
 // D3D12 extension library.
 #include <d3dx12.h>
 // Windows Runtime Library. Needed for Microsoft::WRL::ComPtr<> template class.
@@ -34,6 +38,7 @@ using namespace Microsoft::WRL;
 #undef max
 #undef CreateWindow
 
+#include <DirectXHelpers.h>
 #include <TaggedPrimitives.h>
 #include <RawInput.Enums.h>
 #include <DSMath.h>

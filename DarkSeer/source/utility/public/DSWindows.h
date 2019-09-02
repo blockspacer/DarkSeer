@@ -1,5 +1,5 @@
 #pragma once
-inline namespace EngineWindows
+inline namespace DSWindows
 {
         inline namespace Globals
         {
@@ -97,6 +97,7 @@ inline namespace EngineWindows
                 {
                         windowCreationDescriptor.width  = static_cast<int>((std::get<0>(size.floats) / 100) * g_screenWidth);
                         windowCreationDescriptor.height = static_cast<int>((std::get<1>(size.floats) / 100) * g_screenHeight);
+
                         return *this;
                 }
                 inline CreateWindow& BackgroundColor(unsigned r, unsigned g, unsigned b)

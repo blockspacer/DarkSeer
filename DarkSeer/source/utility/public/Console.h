@@ -1,6 +1,11 @@
 #pragma once
 inline namespace Console
 {
+        inline namespace Globals
+        {
+                inline bool g_consoleActivated     = false;
+                inline HWND g_prevForegroundWindow = 0;
+        } // namespace Globals
         inline void InitializeConsole()
         {
                 AllocConsole();
@@ -43,5 +48,43 @@ inline namespace Console
         {
                 fclose(stdout);
                 FreeConsole();
+        }
+        inline void Begin()
+        {
+                g_consoleActivated      = true;
+                g_prevForegroundWindow  = GetForegroundWindow();
+                auto ConsoleInputHandle = GetStdHandle(STD_INPUT_HANDLE);
+                FlushConsoleInputBuffer(ConsoleInputHandle);
+                SetForegroundWindow(GetConsoleWindow());
+        }
+        inline void End()
+        {
+                g_consoleActivated = false;
+                SetForegroundWindow(g_prevForegroundWindow);
+        }
+        inline float GetFloatNoFail(std::string promptMessage)
+        {
+                std::string cinStrBuffer;
+
+                std::string::size_type read_count = 0;
+                float                  cin_value  = 0;
+
+                do
+                {
+                        std::cout << promptMessage;
+                        std::getline(std::cin, cinStrBuffer);
+                        try
+                        {
+                                cin_value = std::stof(cinStrBuffer, &read_count);
+                        }
+                        catch (std::invalid_argument)
+                        {}
+                } while (!read_count || read_count != cinStrBuffer.size());
+
+                return cin_value;
+        }
+        inline bool IsActive()
+        {
+                return g_consoleActivated;
         }
 } // namespace Console

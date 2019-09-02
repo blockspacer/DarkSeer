@@ -1,6 +1,6 @@
 #include <DSWindows.h>
 
-inline namespace EngineWindows
+inline namespace DSWindows
 {
         inline namespace Globals
         {
