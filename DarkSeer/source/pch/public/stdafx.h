@@ -3,25 +3,25 @@
 #include <Windows.h>
 
 #include <assert.h>
+#include <intrin.h>
+#include <stdint.h>
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cmath>
+#include <iostream>
 #include <limits>
+#include <memory>
 #include <numeric>
+#include <random>
+#include <sstream>
+#include <string>
+#include <thread>
 #include <tuple>
 #include <type_traits>
 #include <vector>
-#include <chrono>
-#include <thread>
-#include <atomic>
-#include <cmath>
-#include <algorithm>
-#include <iostream>
-#include <stdint.h>
-#include <memory>
-#include <random>
-#include <intrin.h>
-#include <string>
-#include <sstream>
 
-//directx12
+// directx12
 #include <DirectXMath.h>
 #include <d3d12.h>
 #include <d3dcompiler.h>
@@ -38,7 +38,11 @@ using namespace Microsoft::WRL;
 #undef max
 #undef CreateWindow
 
-#include <DirectXHelpers.h>
 #include <TaggedPrimitives.h>
-#include <RawInput.Enums.h>
+
+#include <Admin.h>
 #include <DSMath.h>
+#include <DirectXHelpers.h>
+#include <MemoryDefines.h>
+#include <RawInput.Enums.h>
+

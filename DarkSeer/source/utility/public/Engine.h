@@ -1,6 +1,6 @@
 #pragma once
 #include <Console.h>
-#include <RawInput.h>
+#include <SingletonInput.h>
 
 inline namespace Engine
 {
@@ -16,9 +16,10 @@ inline namespace Engine
                 bool consoleActivated = false;
                 while (!g_engineShutdown)
                 {
-                        g_inputBuffer.Signal();
+                        SingletonInput* singlInput = admin.GetSingletonInput();
+                        singlInput->m_inputBuffer.Signal();
 
-                        for (auto& inputFrame : g_inputBuffer)
+                        for (auto& inputFrame : singlInput->m_inputBuffer)
                         {
                                 if (inputFrame.m_pressState.ShiftLeft && inputFrame.IsKeyPress(KeyCode::C) && !Console::IsActive())
                                 {

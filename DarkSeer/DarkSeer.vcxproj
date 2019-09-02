@@ -53,7 +53,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <ForcedIncludeFiles>stdafx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <AdditionalIncludeDirectories>$(ProjectDir)/source/pch/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -70,6 +70,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -78,13 +79,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="source\pch\private\stdafx.cpp">
+    <ClCompile Include="source\Admin\private\Admin.cpp" />
+    <ClCompile Include="source\Components\private\CircularInputBuffer.cpp" />
+    <ClCompile Include="source\PCH\private\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\main.cpp" />
-    <ClCompile Include="source\utility\private\DSWindows.cpp" />
-    <ClCompile Include="source\utility\private\RawInput.cpp" />
+    <ClCompile Include="source\Systems\private\InputSystem.cpp" />
+    <ClCompile Include="source\Utility\private\DSWindows.cpp" />
+    <ClCompile Include="source\Components\private\SingletonInput.cpp" />
+    <ClCompile Include="source\utility\private\InputUtility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="CompileSettings.cmp" />
@@ -92,24 +97,30 @@
       <FileType>Document</FileType>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)dll</DestinationFolders>
     </CopyFileToFolders>
-    <None Include="source\utility\public\Enums\MOUSE_SCANCODES.ENUM" />
-    <None Include="source\utility\public\Enums\SCANCODES_FLAG1.ENUM" />
-    <None Include="source\utility\public\Enums\SCANCODES_FLAG2.ENUM" />
-    <None Include="source\utility\public\Enums\SCANCODES_FLAG0.ENUM" />
+    <None Include="source\Utility\public\Enums\MOUSE_SCANCODES.ENUM" />
+    <None Include="source\Utility\public\Enums\SCANCODES_FLAG1.ENUM" />
+    <None Include="source\Utility\public\Enums\SCANCODES_FLAG2.ENUM" />
+    <None Include="source\Utility\public\Enums\SCANCODES_FLAG0.ENUM" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\3rdParty\public\d3dx12.h" />
-    <ClInclude Include="source\pch\public\stdafx.h" />
-    <ClInclude Include="source\utility\public\Console.h" />
+    <ClInclude Include="source\Admin\public\Admin.h" />
+    <ClInclude Include="source\Components\private\CircularInputBuffer.h" />
+    <ClInclude Include="source\Components\public\SingletonWindow.h" />
+    <ClInclude Include="source\ECS\public\ECSMemory.h" />
+    <ClInclude Include="source\PCH\public\stdafx.h" />
+    <ClInclude Include="source\Systems\public\InputSystem.h" />
+    <ClInclude Include="source\Utility\public\Console.h" />
     <ClInclude Include="source\utility\public\DSMath.h" />
-    <ClInclude Include="source\utility\public\Engine.h" />
-    <ClInclude Include="source\utility\public\DSWindows.h" />
-    <ClInclude Include="source\utility\public\DirectXHelpers.h" />
-    <ClInclude Include="source\utility\public\MemoryDefines.h" />
-    <ClInclude Include="source\utility\public\DSRandom.h" />
-    <ClInclude Include="source\utility\public\RawInput.h" />
+    <ClInclude Include="source\Utility\public\Engine.h" />
+    <ClInclude Include="source\Utility\public\DSWindows.h" />
+    <ClInclude Include="source\Utility\public\DirectXHelpers.h" />
+    <ClInclude Include="source\Utility\public\InputUtility.h" />
+    <ClInclude Include="source\Utility\public\MemoryDefines.h" />
+    <ClInclude Include="source\Utility\public\DSRandom.h" />
+    <ClInclude Include="source\Components\public\SingletonInput.h" />
     <ClInclude Include="source\utility\public\TaggedPrimitives.h" />
-    <ClInclude Include="source\utility\public\RawInput.Enums.h" />
+    <ClInclude Include="source\Utility\public\RawInput.Enums.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

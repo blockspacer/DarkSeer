@@ -1,4 +1,5 @@
 #pragma once
+
 inline namespace Enums
 {
 #undef ENUM
@@ -21,11 +22,11 @@ inline namespace Enums
                 COUNT
         };
 #undef ENUM
-        constexpr uint8_t  INPUT_NUM_MOUSE_SCANCODES              = to_integral(DummyMouseCodesEnum::COUNT);
-        constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES = to_integral(KeyCode::COUNT) - INPUT_NUM_MOUSE_SCANCODES;
+        constexpr uint8_t  INPUT_NUM_MOUSE_SCANCODES              = to_underlying_type(DummyMouseCodesEnum::COUNT);
+        constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES = to_underlying_type(KeyCode::COUNT) - INPUT_NUM_MOUSE_SCANCODES;
         constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODES           = INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES / 3;
 #define ENUM(E, V) #E,
-        constexpr const char* buttonSignatureToString[to_integral(KeyCode::COUNT) + 1]{
+        constexpr const char* buttonSignatureToString[to_underlying_type(KeyCode::COUNT) + 1]{
 #include <Enums/SCANCODES_FLAG0.ENUM>
 #include <Enums/SCANCODES_FLAG1.ENUM>
 #include <Enums/SCANCODES_FLAG2.ENUM>
@@ -52,13 +53,13 @@ inline namespace Enums
                 {
                         uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
                         uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
-                        pressStateAlias[to_integral(button) >> 6] |= mask;
+                        pressStateAlias[to_underlying_type(button) >> 6] |= mask;
                 }
                 inline void KeyUp(KeyCode button)
                 {
                         uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
                         uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
-                        pressStateAlias[to_integral(button) >> 6] &= ~mask;
+                        pressStateAlias[to_underlying_type(button) >> 6] &= ~mask;
                 }
         };
 #undef ENUM

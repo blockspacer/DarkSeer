@@ -1,7 +1,5 @@
 #pragma once
-#include <MemoryDefines.h>
-
-inline namespace RawInput
+inline namespace NSingletonInput
 {
         inline void RegisterDefaultRawInputDevices()
         {
@@ -33,10 +31,10 @@ inline namespace RawInput
                 int16_t                m_scrollDelta;     //				2	B
                 KeyTransition          m_transitionState; // up or down //	1	B
 
-                static constexpr auto  DATA_SIZE = sizeof(m_pressState) + sizeof(m_mouseDeltas) + sizeof(m_buttonSignature) +
+                static constexpr auto DATA_SIZE = sizeof(m_pressState) + sizeof(m_mouseDeltas) + sizeof(m_buttonSignature) +
                                                   sizeof(m_scrollDelta) + sizeof(m_transitionState);
                 static_assert(DATA_SIZE <= CACHE_LINE);
-                std::enable_if<DATA_SIZE - CACHE_LINE != 0, char>::type m_padding[CACHE_LINE-DATA_SIZE];
+                std::enable_if<DATA_SIZE - CACHE_LINE != 0, char>::type m_padding[CACHE_LINE - DATA_SIZE];
 
                 inline bool IsKeyPress(KeyCode keyCode) const
                 {
@@ -154,7 +152,7 @@ inline namespace RawInput
                         friend struct InputBuffer;
                 };
 
-            private:
+            public:
                 //================================================================
                 // Multithreaded Circular Buffer (Single Producer - Single Consumer)
                 static constexpr uint64_t MAX_INPUT_FRAMES_PER_FRAME = saturatePowerOf2(10000U);
@@ -170,7 +168,7 @@ inline namespace RawInput
                 //================================================================
                 // range loop
                 const int64_t m_currFrameBottom;
-                const int64_t m_currFrametop;
+                const int64_t m_currFrameTop;
 
             public:
                 //================================================================
@@ -190,7 +188,7 @@ inline namespace RawInput
 
                 inline iterator begin() const
                 {
-                        return iterator(*this, m_currFrametop);
+                        return iterator(*this, m_currFrameTop);
                 }
                 inline iterator end() const
                 {
@@ -216,4 +214,4 @@ inline namespace RawInput
         {
                 inline InputBuffer g_inputBuffer;
         }
-} // namespace RawInput
+} // namespace NSingletonInput
