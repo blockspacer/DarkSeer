@@ -90,9 +90,9 @@
     <ClCompile Include="source\Systems\private\InputSystem.cpp" />
     <ClCompile Include="source\Utility\private\DSWindows.cpp" />
     <ClCompile Include="source\utility\private\InputUtility.cpp" />
+    <ClCompile Include="source\Utility\private\WindowUtility.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="CompileSettings.cmp" />
     <CopyFileToFolders Include="dll\d3dcompiler_47.dll">
       <FileType>Document</FileType>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)dll</DestinationFolders>
@@ -121,6 +121,7 @@
     <ClInclude Include="source\Components\public\SingletonInput.h" />
     <ClInclude Include="source\utility\public\TaggedPrimitives.h" />
     <ClInclude Include="source\Utility\public\RawInput.Enums.h" />
+    <ClInclude Include="source\Utility\public\WindowUtility.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

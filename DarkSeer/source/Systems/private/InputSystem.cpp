@@ -4,5 +4,5 @@
 void InputSystem::Initialize()
 {}
 
-void InputSystem::Shutdown()
+void InputSystem::ShutDown()
 {}

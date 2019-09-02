@@ -36,7 +36,7 @@ using namespace Microsoft::WRL;
 
 #undef min
 #undef max
-#undef CreateWindow
+#undef WindowProxy
 
 #include <TaggedPrimitives.h>
 

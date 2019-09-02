@@ -6,7 +6,9 @@
 namespace InputUtil
 {
         LRESULT CALLBACK InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam);
-}
+
+        void MessageLoopMain();
+} // namespace InputUtil
 
 void InputUtil::InitializeInputBuffer(SingletonInput* singlInput)
 {
@@ -65,7 +67,7 @@ LRESULT InputUtil::InputWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
         InputFrame tempInputFrame;
         memset(((char*)&tempInputFrame) + sizeof(KeyState), 0, sizeof(InputFrame) - sizeof(KeyState));
 
-        auto* singlInputBuffer      = &g_userAdmin.GetSingletonInput()->m_inputBuffer;
+        auto* singlInputBuffer      = &const_cast<SingletonInput*>(g_userAdmin.GetSingletonInput())->m_inputBuffer;
         tempInputFrame.m_pressState = singlInputBuffer->back().m_pressState;
 
         switch (message)

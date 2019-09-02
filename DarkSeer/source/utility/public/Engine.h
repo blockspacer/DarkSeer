@@ -6,9 +6,9 @@ inline namespace Engine
 {
         inline namespace EngineGlobals
         {
-                volatile bool g_engineShutdown = false;
-                uint64_t      g_frameCounter   = 0;
-                std::thread   g_engineThread;
+                volatile inline bool g_engineShutdown = false;
+                inline uint64_t      g_frameCounter   = 0;
+                inline std::thread   g_engineThread;
         } // namespace EngineGlobals
 
         inline void EngineMain()
