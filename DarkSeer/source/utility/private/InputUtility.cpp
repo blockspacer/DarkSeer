@@ -1,8 +1,14 @@
 #include <InputUtility.h>
 
 #include <SingletonInput.h>
+#include <SingletonWindow.h>
 
-void InputUtil::InitializeInputBuffer(SingletonInput* singlInput, HWND hwnd)
+namespace InputUtil
+{
+        LRESULT CALLBACK InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam);
+}
+
+void InputUtil::InitializeInputBuffer(SingletonInput* singlInput)
 {
         // allocate input buffer
         singlInput->m_inputBuffer.m_inputFrames =
@@ -17,11 +23,14 @@ void InputUtil::InitializeInputBuffer(SingletonInput* singlInput, HWND hwnd)
         // set previous press state to 0 for all buttons
 #pragma warning(suppress : 6385)
         memset(&singlInput->m_inputBuffer.m_inputFrames[-1 & InputBuffer::MASK].m_pressState, 0, sizeof(KeyState));
+}
 
+void InputUtil::InitializeInputWndProc(SingletonInput* singlInput, const SingletonWindow* singlWindow)
+{
         // add input capture window proc to the window handle's previous window proc
-        singlInput->m_parentHWND    = hwnd;
-        singlInput->m_parentWndProc = (WNDPROC)SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)InputWndProc);
-        SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+        singlInput->m_parentWndProc =
+            (WNDPROC)SetWindowLongPtrA(singlWindow->m_mainHwnd, GWLP_WNDPROC, (LONG_PTR)InputUtil::InputWndProc);
+        SetWindowPos(singlWindow->m_mainHwnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 }
 
 void InputUtil::ReleaseInputBufferMemory(SingletonInput* singlInput)
@@ -207,7 +216,7 @@ LRESULT InputUtil::InputWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
         }
 
         return CallWindowProcA(g_userAdmin.GetSingletonInput()->m_parentWndProc,
-                               g_userAdmin.GetSingletonInput()->m_parentHWND,
+                               g_userAdmin.GetSingletonWindow()->m_mainHwnd,
                                message,
                                wParam,
                                lParam);

@@ -17,7 +17,7 @@ inline namespace DSWindows
                 char    WindowTitle[32];
                 char    WindowClassName[32];
                 HWND    m_hwnd;
-                WNDPROC windowProc;
+                WNDPROC wndProc;
                 int     x;
                 int     y;
                 int     width;
@@ -31,91 +31,86 @@ inline namespace DSWindows
 
         struct Window
         {
-            private:
-                HWND m_hwnd;
+                HWND    m_hwnd;
+                WNDPROC m_wndproc;
 
-            public:
-                inline Window(HWND m_hwnd) : m_hwnd(m_hwnd)
+                inline Window(HWND hwnd, WNDPROC wndproc) : m_hwnd(hwnd), m_wndproc(wndproc)
                 {}
                 inline void Show()
                 {
                         bool test = ShowWindow(m_hwnd, SW_SHOWDEFAULT);
-                }
-                inline HWND GetHWND()
-                {
-                        return m_hwnd;
                 }
         };
 
         struct CreateWindow
         {
             private:
-                WindowCreationDescriptor windowCreationDescriptor;
+                WindowCreationDescriptor windowProxyDescriptor;
 
             public:
                 inline CreateWindow()
                 {
-                        memset(&windowCreationDescriptor, 0, sizeof(windowCreationDescriptor));
-                        windowCreationDescriptor.windowProc = g_mainWindowProc;
-                        windowCreationDescriptor.style      = WS_OVERLAPPED;
-                        windowCreationDescriptor.x          = CW_USEDEFAULT;
-                        windowCreationDescriptor.y          = CW_USEDEFAULT;
-                        windowCreationDescriptor.width      = CW_USEDEFAULT;
-                        windowCreationDescriptor.height     = CW_USEDEFAULT;
-                        windowCreationDescriptor.style      = WS_OVERLAPPED;
-                        strcpy_s(windowCreationDescriptor.WindowClassName, std::to_string(__COUNTER__).c_str());
+                        memset(&windowProxyDescriptor, 0, sizeof(windowProxyDescriptor));
+                        windowProxyDescriptor.wndProc = g_mainWindowProc;
+                        windowProxyDescriptor.style      = WS_OVERLAPPED;
+                        windowProxyDescriptor.x          = CW_USEDEFAULT;
+                        windowProxyDescriptor.y          = CW_USEDEFAULT;
+                        windowProxyDescriptor.width      = CW_USEDEFAULT;
+                        windowProxyDescriptor.height     = CW_USEDEFAULT;
+                        windowProxyDescriptor.style      = WS_OVERLAPPED;
+                        strcpy_s(windowProxyDescriptor.WindowClassName, std::to_string(__COUNTER__).c_str());
                 }
                 inline CreateWindow& Title(const char* title)
                 {
-                        strcpy_s(windowCreationDescriptor.WindowTitle, title);
+                        strcpy_s(windowProxyDescriptor.WindowTitle, title);
                         return *this;
                 }
                 inline CreateWindow& Position(int x, int y)
                 {
-                        windowCreationDescriptor.x = x;
-                        windowCreationDescriptor.y = y;
+                        windowProxyDescriptor.x = x;
+                        windowProxyDescriptor.y = y;
                         return *this;
                 }
                 inline CreateWindow& Position(percent<float, float> pos)
                 {
-                        windowCreationDescriptor.x = std::lroundf((std::get<0>(pos.floats) / 100) * g_screenWidth);
-                        windowCreationDescriptor.y = std::lroundf((std::get<1>(pos.floats) / 100) * g_screenHeight);
+                        windowProxyDescriptor.x = std::lroundf((std::get<0>(pos.floats) / 100) * g_screenWidth);
+                        windowProxyDescriptor.y = std::lroundf((std::get<1>(pos.floats) / 100) * g_screenHeight);
                         return *this;
                 }
                 inline CreateWindow& WindProc(WNDPROC wndProc)
                 {
-                        windowCreationDescriptor.windowProc = wndProc;
+                        windowProxyDescriptor.wndProc = wndProc;
                         return *this;
                 }
                 inline CreateWindow& Size(int width, int height)
                 {
-                        windowCreationDescriptor.width  = width;
-                        windowCreationDescriptor.height = height;
+                        windowProxyDescriptor.width  = width;
+                        windowProxyDescriptor.height = height;
                         return *this;
                 }
                 inline CreateWindow& Size(percent<float, float> size)
                 {
-                        windowCreationDescriptor.width  = static_cast<int>((std::get<0>(size.floats) / 100) * g_screenWidth);
-                        windowCreationDescriptor.height = static_cast<int>((std::get<1>(size.floats) / 100) * g_screenHeight);
+                        windowProxyDescriptor.width  = static_cast<int>((std::get<0>(size.floats) / 100) * g_screenWidth);
+                        windowProxyDescriptor.height = static_cast<int>((std::get<1>(size.floats) / 100) * g_screenHeight);
 
                         return *this;
                 }
                 inline CreateWindow& BackgroundColor(unsigned r, unsigned g, unsigned b)
                 {
                         COLORREF rgb                           = 0 | r | (g << 1) | (b << 2);
-                        windowCreationDescriptor.hbrBackground = CreateSolidBrush(rgb);
+                        windowProxyDescriptor.hbrBackground = CreateSolidBrush(rgb);
                         return *this;
                 }
                 inline Window Finalize()
                 {
                         WNDCLASS wc          = {};
-                        wc.lpfnWndProc       = windowCreationDescriptor.windowProc;
+                        wc.lpfnWndProc       = windowProxyDescriptor.wndProc;
                         wc.hInstance         = g_hInstance;
-                        wc.lpszClassName     = windowCreationDescriptor.WindowClassName;
+                        wc.lpszClassName     = windowProxyDescriptor.WindowClassName;
                         auto standard_cursor = LoadCursor(0, IDC_ARROW);
                         wc.hCursor           = standard_cursor;
                         wc.style             = CS_HREDRAW | CS_VREDRAW;
-                        wc.hbrBackground     = windowCreationDescriptor.hbrBackground;
+                        wc.hbrBackground     = windowProxyDescriptor.hbrBackground;
 
 
                         DWORD err;
@@ -123,22 +118,22 @@ inline namespace DSWindows
                                 err = GetLastError();
                         int pause = 0;
 
-                        auto m_hwnd = CreateWindowExA(windowCreationDescriptor.exstyle,         // Optional window styles.
-                                                      windowCreationDescriptor.WindowClassName, // Window class
-                                                      windowCreationDescriptor.WindowTitle,     // Window text
+                        auto hwnd = CreateWindowExA(windowProxyDescriptor.exstyle,         // Optional window styles.
+                                                      windowProxyDescriptor.WindowClassName, // Window class
+                                                      windowProxyDescriptor.WindowTitle,     // Window text
                                                       WS_OVERLAPPEDWINDOW,                      // Window style
 
-                                                      windowCreationDescriptor.x,
-                                                      windowCreationDescriptor.y,
-                                                      windowCreationDescriptor.width,
-                                                      windowCreationDescriptor.height,
+                                                      windowProxyDescriptor.x,
+                                                      windowProxyDescriptor.y,
+                                                      windowProxyDescriptor.width,
+                                                      windowProxyDescriptor.height,
 
-                                                      windowCreationDescriptor.parent, // Parent window
-                                                      windowCreationDescriptor.menu,   // Menu
+                                                      windowProxyDescriptor.parent, // Parent window
+                                                      windowProxyDescriptor.menu,   // Menu
                                                       g_hInstance,                     // Instance handle
                                                       0                                // Additional application data
                         );
-                        return Window(m_hwnd);
+                        return Window(hwnd, windowProxyDescriptor.wndProc);
                 }
         };
 
@@ -159,4 +154,4 @@ inline namespace DSWindows
         {
                 g_windowsMessageShutdown = true;
         }
-} // namespace Windows
+} // namespace DSWindows

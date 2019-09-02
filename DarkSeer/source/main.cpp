@@ -19,7 +19,6 @@ int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pC
 
         LaunchEngine();
         MessageLoop();
-
         ShutdownEngine();
 
         return 0;

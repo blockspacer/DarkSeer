@@ -3,8 +3,7 @@
 
 struct SingletonInput
 {
-        std::tuple<long, long> m_previousAbsoluteMousePos;
         WNDPROC                m_parentWndProc;
-        HWND                   m_parentHWND;
+        std::tuple<long, long> m_previousAbsoluteMousePos;
         InputBuffer            m_inputBuffer;
 };

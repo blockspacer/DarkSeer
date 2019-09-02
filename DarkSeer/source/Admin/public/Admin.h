@@ -5,13 +5,15 @@ struct SingletonWindow;
 struct Admin
 {
     private:
-        SingletonInput* m_singletonInput = 0;
+        SingletonInput*  m_singletonInput  = 0;
+        SingletonWindow* m_singletonWindow = 0;
 
     public:
-        SingletonInput* GetSingletonInput();
+        SingletonInput*  GetSingletonInput();
+        SingletonWindow* GetSingletonWindow();
 
     public:
-        void            Initialize();
-        void            Shutdown();
+        void Initialize();
+        void Shutdown();
 };
 inline Admin g_userAdmin;
