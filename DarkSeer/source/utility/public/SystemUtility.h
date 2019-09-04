@@ -3,7 +3,7 @@ struct SingletonWindow;
 struct SingletonSystemManager;
 struct SingletonTimer;
 #include <SingletonSystemManager.h>
-// utilities/helpers
+
 namespace SystemUtil
 {
         enum SystemIndex : int
@@ -17,6 +17,12 @@ namespace SystemUtil
 
         namespace SystemConceptMetaFunctions
         {
+                template <class SystemConcept, class = void>
+                struct has_entity_admin : std::false_type
+                {};
+                template <class SystemConcept>
+                struct has_entity_admin<SystemConcept, std::void_t<decltype(SystemConcept::PostUpdate())>> : std::true_type
+                {};
                 template <class SystemConcept, class = void>
                 struct has_initialize : std::false_type
                 {};
@@ -63,7 +69,7 @@ namespace SystemUtil
         using namespace SystemConceptMetaFunctions;
 
         template <typename TSystemConcept>
-        inline void DebugAttachSystemInjectMetaData(SingletonSystemManager* singlSystemManager)
+        inline void AttachSystem_DEBUG_INJECT_META_DATA(SingletonSystemManager* singlSystemManager)
         {
 #ifdef _DEBUG
                 if constexpr (has_initialize<TSystemConcept>::value)
@@ -104,7 +110,7 @@ namespace SystemUtil
 #endif
         }
         template <typename TSystemConcept>
-        inline void AttachSystem(SingletonSystemManager* singlSystemManager)
+        inline void AttachSystem(SingletonSystemManager* singlSystemManager, EntityAdmin* admin)
         {
                 if constexpr (has_initialize<TSystemConcept>::value)
                         singlSystemManager->m_initializeFunctions.push_back(TSystemConcept::Initialize);
@@ -130,6 +136,6 @@ namespace SystemUtil
                 if constexpr (has_shutdown<TSystemConcept>::value)
                         singlSystemManager->m_shutdownFunctions.push_back(TSystemConcept::ShutDown);
 
-                DebugAttachSystemInjectMetaData<TSystemConcept>(singlSystemManager);
+                AttachSystem_DEBUG_INJECT_META_DATA<TSystemConcept>(singlSystemManager);
         }
 } // namespace SystemUtil

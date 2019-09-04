@@ -56,8 +56,16 @@ SingletonTimer* EntityAdmin::GetSingletonTimer()
         return m_singletonTimer;
 }
 
+struct ComponentSystem
+{
+        inline void Initialize()
+        {}
+};
+
 struct SystemConceptB
 {
+        EntityAdmin* m_admin;
+
         static constexpr SingletonTimer::value_type TickRate = SingletonTimer::value_type(100);
 
         inline static void FixedUpdate()
@@ -88,7 +96,7 @@ void EntityAdmin::Initialize()
         WindowUtil::CreateAndShowMainWindow(m_singletonWindow);
         InputUtil::InitializeInputBuffer(m_singletonInput);
         InputUtil::InitializeInputWndProc(m_singletonInput, m_singletonWindow);
-        SystemUtil::AttachSystem<SystemConceptB>(m_singletonSystemManager);
+        SystemUtil::AttachSystem<SystemConceptB>(m_singletonSystemManager, this);
 
         LaunchSystems(m_singletonSystemManager);
         LaunchWnproc(m_singletonWindow);
