@@ -1,5 +1,5 @@
 #include <SingletonInput.h>
-#include "CircularInputBuffer.h"
+#include "InputBuffer.h"
 
 InputBuffer::InputBuffer() :
     m_inputFrames(),

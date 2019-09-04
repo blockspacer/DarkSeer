@@ -1,4 +1,5 @@
 #pragma once
+#define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
@@ -34,13 +35,9 @@
 #include <wrl.h>
 using namespace Microsoft::WRL;
 
-#undef min
-#undef max
-#undef WindowProxy
-
 #include <TaggedPrimitives.h>
 
-#include <Admin.h>
+#include <EntityAdmin.h>
 #include <DSMath.h>
 #include <DirectXHelpers.h>
 #include <MemoryDefines.h>

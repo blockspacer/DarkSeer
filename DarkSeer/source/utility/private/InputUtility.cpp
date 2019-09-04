@@ -67,7 +67,7 @@ LRESULT InputUtil::InputWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
         InputFrame tempInputFrame;
         memset(((char*)&tempInputFrame) + sizeof(KeyState), 0, sizeof(InputFrame) - sizeof(KeyState));
 
-        auto* singlInputBuffer      = &const_cast<SingletonInput*>(g_userAdmin.GetSingletonInput())->m_inputBuffer;
+        auto* singlInputBuffer      = &const_cast<SingletonInput*>(g_userEntityAdmin.GetSingletonInput())->m_inputBuffer;
         tempInputFrame.m_pressState = singlInputBuffer->back().m_pressState;
 
         switch (message)
@@ -217,8 +217,8 @@ LRESULT InputUtil::InputWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
                 }
         }
 
-        return CallWindowProcA(g_userAdmin.GetSingletonInput()->m_parentWndProc,
-                               g_userAdmin.GetSingletonWindow()->m_mainHwnd,
+        return CallWindowProcA(g_userEntityAdmin.GetSingletonInput()->m_parentWndProc,
+                               g_userEntityAdmin.GetSingletonWindow()->m_mainHwnd,
                                message,
                                wParam,
                                lParam);

@@ -16,7 +16,7 @@ inline namespace Engine
                 bool consoleActivated = false;
                 while (!g_engineShutdown)
                 {
-                        SingletonInput* singlInput = g_userAdmin.GetSingletonInput();
+                        SingletonInput* singlInput = g_userEntityAdmin.GetSingletonInput();
                         singlInput->m_inputBuffer.Signal();
 
                         for (auto& inputFrame : singlInput->m_inputBuffer)

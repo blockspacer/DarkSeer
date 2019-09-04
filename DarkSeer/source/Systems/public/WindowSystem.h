@@ -1,5 +1,5 @@
 #pragma once
-struct InputSystem
+struct WindowSystem
 {
     private:
         EntityAdmin* m_Admin = &g_userEntityAdmin;

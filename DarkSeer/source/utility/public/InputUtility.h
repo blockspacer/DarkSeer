@@ -8,5 +8,4 @@ namespace InputUtil
         void InitializeInputWndProc(SingletonInput* singlInput, const SingletonWindow* singlWindow);
         void ReleaseInputBufferMemory(SingletonInput* singlInput);
         void RegisterDefaultRawInputDevices();
-        void LaunchMessageLoop(SingletonWindow* singlWindow);
 } // namespace InputUtil

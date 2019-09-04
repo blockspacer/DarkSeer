@@ -1,5 +1,5 @@
 #pragma once
-#include "../private/CircularInputBuffer.h"
+#include "../private/InputBuffer.h"
 
 struct SingletonInput
 {
