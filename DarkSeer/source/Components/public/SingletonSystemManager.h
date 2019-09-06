@@ -17,15 +17,15 @@ struct SingletonSystemManager_DEBUG_METADATA
 
 struct SingletonSystemManager : SingletonSystemManager_DEBUG_METADATA
 {
-        bool m_runSystems;
-        std::thread   m_systemManagerThread;
+        struct requires_constructor_tag;
+        bool        m_runSystems;
+        std::thread m_systemManagerThread;
 
         std::vector<void (*)(EntityAdmin*)> m_initializeFunctions;
         std::vector<void (*)(EntityAdmin*)> m_shutdownFunctions;
 
         std::vector<void (*)(EntityAdmin*)>     m_fixedUpdateFunctions;
         std::vector<SingletonTimer::value_type> m_fixedUpdateTickRates;
-        std::vector<SingletonTimer::value_type> m_fixedUpdateTotalTimes;
 
         std::vector<void (*)(EntityAdmin*)> m_updateFunctions;
         std::vector<void (*)(EntityAdmin*)> m_postUpdateFunctions;

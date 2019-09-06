@@ -21,7 +21,7 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
-
+#include <functional>
 
 // directx12
 #include <DirectXMath.h>

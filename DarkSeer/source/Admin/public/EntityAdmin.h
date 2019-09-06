@@ -71,12 +71,11 @@ namespace SystemConceptMetaFunctions
 struct EntityAdmin
 {
     private:
-        SingletonInput*         m_singletonInput              = 0;
-        SingletonWindow*        m_singletonWindow             = 0;
-        SingletonConsole*       m_singletonConsole            = 0;
-        SingletonSystemManager* m_singletonSystemManager      = 0;
-        SingletonSystemManager* m_singletonSystemManagerLocal = 0;
-        SingletonTimer*         m_singletonTimer              = 0;
+        SingletonInput*         m_singletonInput;
+        SingletonSystemManager* m_singletonSystemManager;
+        SingletonWindow*        m_singletonWindow;
+        SingletonConsole*       m_singletonConsole;
+        SingletonTimer*         m_singletonTimer;
 
     public:
         SingletonInput*         GetSingletonInput();
@@ -136,8 +135,17 @@ struct EntityAdmin
                                                    SingletonSystemManager* singlSystemManager);
 
     public:
+        // If any of the follow function signatures are static members of the template paramater type:
+        //	Update(EntityAdmin*)
+        //	PreUpdate(EntityAdmin*)
+        //	PostUpdate(EntityAdmin*)
+        //	Shutdown(EntityAdmin*)
+        //	ComponentsInitialize(EntityAdmin*)
+        //	FixedUpdate(EntityAdmin*) /* requires static constexpr TickRate */
+        // their function will be pushed into the singlSystemManager and called in the appropriate order after SystemsLaunch is
+        // called on the singlSystemManager
         template <typename TSystemConcept>
-        inline void AttachSystem(SingletonSystemManager* singlSystemManager)
+        inline void SystemsAttach(SingletonSystemManager* singlSystemManager)
         {
                 using namespace SystemConceptMetaFunctions;
 
@@ -158,20 +166,19 @@ struct EntityAdmin
 
                         singlSystemManager->m_fixedUpdateFunctions.push_back(TSystemConcept::FixedUpdate);
                         singlSystemManager->m_fixedUpdateTickRates.push_back(TSystemConcept::TickRate);
-                        singlSystemManager->m_fixedUpdateTotalTimes.push_back(SingletonTimer::value_type(0));
+                        //singlSystemManager->m_fixedUpdateTotalTimes.push_back(SingletonTimer::value_type(0));
                 }
                 if constexpr (has_post_update<TSystemConcept>::value)
                         singlSystemManager->m_postUpdateFunctions.push_back(TSystemConcept::PostUpdate);
                 if constexpr (has_shutdown<TSystemConcept>::value)
-                        singlSystemManager->m_shutdownFunctions.push_back(TSystemConcept::ShutDown);
+                        singlSystemManager->m_shutdownFunctions.push_back(TSystemConcept::ComponentsShutdown);
 
                 AttachSystem_DEBUG_INJECT_META_DATA<TSystemConcept>(singlSystemManager);
         }
+        void SystemsLaunch(SingletonTimer* singlTimer, SingletonSystemManager* singlSystemManager);
+        void SystemsShutdown(SingletonSystemManager* singlSystemManager);
 
-        void LaunchSystemUpdateLoop(SingletonTimer* singlTimer, SingletonSystemManager* singlSystemManager);
-        void ShutdownSystemUpdateLoop(SingletonSystemManager* singlSystemManager);
-
-        void Initialize();
-        void ShutDown();
+        void ComponentsInitialize();
+        void ComponentsShutdown();
 };
 inline EntityAdmin g_userEntityAdmin;

@@ -46,14 +46,12 @@ void EntityAdmin::SystemUpdateLoop(EntityAdmin*            entityAdmin,
         // fixed update
         for (auto i = 0; i < singlSystemManager->m_fixedUpdateFunctions.size(); i++)
         {
-                singlTimer->m_fixedUpdateIndex = i;
-
                 SingletonTimer::value_type::rep numSteps =
                     singlTimer->m_deltaTime.count() / singlSystemManager->m_fixedUpdateTickRates[i].count();
 
                 SingletonTimer::value_type timerDifference =
                     singlTimer->m_totalTime - ((numSteps * singlSystemManager->m_fixedUpdateTickRates[i]) +
-                                               singlSystemManager->m_fixedUpdateTotalTimes[i]);
+                                               singlTimer->m_fixedUpdateTotalTimes[i]);
 
                 SingletonTimer::value_type::rep numAccumulationSteps =
                     timerDifference.count() / singlSystemManager->m_fixedUpdateTickRates[i].count();
@@ -62,7 +60,8 @@ void EntityAdmin::SystemUpdateLoop(EntityAdmin*            entityAdmin,
 
                 for (auto j = 1; j <= numSteps; j++)
                 {
-                        singlSystemManager->m_fixedUpdateTotalTimes[i] += singlSystemManager->m_fixedUpdateTickRates[i];
+                        singlTimer->m_fixedUpdateTotalTimes[i] += singlSystemManager->m_fixedUpdateTickRates[i];
+                        singlTimer->m_fixedTotalTime = singlTimer->m_fixedUpdateTotalTimes[i];
                         singlSystemManager->m_fixedUpdateFunctions[i](entityAdmin);
                 }
 
@@ -78,6 +77,7 @@ void EntityAdmin::LaunchSystemUpdateLoopInternal(EntityAdmin*            entityA
                                                  SingletonTimer*         singlTimer,
                                                  SingletonSystemManager* singlSystemManager)
 {
+        singlTimer->m_fixedUpdateTotalTimes.resize(singlSystemManager->m_fixedUpdateFunctions.size());
         for (const auto& initialize : singlSystemManager->m_initializeFunctions)
         {
                 initialize(entityAdmin);
@@ -95,12 +95,12 @@ void EntityAdmin::LaunchSystemUpdateLoopInternal(EntityAdmin*            entityA
         }
 }
 
-void EntityAdmin::LaunchSystemUpdateLoop(SingletonTimer* singlTimer, SingletonSystemManager* singlSystemManager)
+void EntityAdmin::SystemsLaunch(SingletonTimer* singlTimer, SingletonSystemManager* singlSystemManager)
 {
         singlSystemManager->m_systemManagerThread =
             std::thread(LaunchSystemUpdateLoopInternal, this, singlTimer, singlSystemManager);
 
-        auto singlWindow = m_singletonWindow;
+        auto singlWindow = GetSingletonWindow();
 
         singlWindow->m_dispatchMessages = true;
         while (singlWindow->m_dispatchMessages)
@@ -114,31 +114,24 @@ void EntityAdmin::LaunchSystemUpdateLoop(SingletonTimer* singlTimer, SingletonSy
         }
 }
 
-void EntityAdmin::ShutdownSystemUpdateLoop(SingletonSystemManager* singlSystemManager)
+void EntityAdmin::SystemsShutdown(SingletonSystemManager* singlSystemManager)
 {
         singlSystemManager->m_runSystems = false;
         singlSystemManager->m_systemManagerThread.join();
 }
 
-void EntityAdmin::Initialize()
+void EntityAdmin::ComponentsInitialize()
 {
         ECSInitialize();
 
-        m_singletonInput         = static_cast<SingletonInput*>(ECSAllocateSingleton(sizeof(SingletonInput)));
-        m_singletonWindow        = static_cast<SingletonWindow*>(ECSAllocateSingleton(sizeof(SingletonWindow)));
-        m_singletonConsole       = static_cast<SingletonConsole*>(ECSAllocateSingleton(sizeof(SingletonConsole)));
-        m_singletonSystemManager = static_cast<SingletonSystemManager*>(ECSAllocateSingleton(sizeof(SingletonSystemManager)));
-        m_singletonTimer         = static_cast<SingletonTimer*>(ECSAllocateSingleton(sizeof(SingletonTimer)));
-
-        construct(m_singletonInput);
-        construct(m_singletonSystemManager);
+        ECSAllocateSingleton(m_singletonInput);
+        ECSAllocateSingleton(m_singletonSystemManager);
+        ECSAllocateSingleton(m_singletonWindow);
+        ECSAllocateSingleton(m_singletonConsole);
+        ECSAllocateSingleton(m_singletonTimer);
 }
 
-void EntityAdmin::ShutDown()
+void EntityAdmin::ComponentsShutdown()
 {
-        destroy(m_singletonInput);
-        destroy(m_singletonSystemManager);
-
         ECSShutDown();
 }
-
