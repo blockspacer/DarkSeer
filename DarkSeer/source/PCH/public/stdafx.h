@@ -37,7 +37,7 @@ using namespace Microsoft::WRL;
 
 #include <TaggedPrimitives.h>
 
-#include <SystemAdmin.h>
+
 #include <EntityAdmin.h>
 #include <DSMath.h>
 #include <DirectXHelpers.h>

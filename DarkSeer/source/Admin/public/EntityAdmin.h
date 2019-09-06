@@ -1,9 +1,8 @@
 #pragma once
+#include <SingletonSystemManager.h>
 struct SingletonInput;
 struct SingletonWindow;
 struct SingletonConsole;
-struct SingletonSystemManager;
-struct SingletonTimer;
 
 enum SystemIndex : int
 {
@@ -170,6 +169,7 @@ struct EntityAdmin
         }
 
         void LaunchSystemUpdateLoop(SingletonTimer* singlTimer, SingletonSystemManager* singlSystemManager);
+        void ShutdownSystemUpdateLoop(SingletonSystemManager* singlSystemManager);
 
         void Initialize();
 };

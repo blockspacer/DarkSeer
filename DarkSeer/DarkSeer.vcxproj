@@ -81,7 +81,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="source\Admin\private\EntityAdmin.cpp" />
-    <ClCompile Include="source\Admin\private\SystemAdmin.cpp" />
     <ClCompile Include="source\Components\private\InputBuffer.cpp" />
     <ClCompile Include="source\PCH\private\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -110,7 +109,6 @@
     <ClInclude Include="resource\public\resource.h" />
     <ClInclude Include="source\3rdParty\public\d3dx12.h" />
     <ClInclude Include="source\Admin\public\EntityAdmin.h" />
-    <ClInclude Include="source\Admin\public\SystemAdmin.h" />
     <ClInclude Include="source\Components\private\InputBuffer.h" />
     <ClInclude Include="source\Components\public\SingletonConsole.h" />
     <ClInclude Include="source\Components\public\SingletonSystemManager.h" />

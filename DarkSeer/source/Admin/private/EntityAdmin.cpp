@@ -114,6 +114,12 @@ void EntityAdmin::LaunchSystemUpdateLoop(SingletonTimer* singlTimer, SingletonSy
         }
 }
 
+void EntityAdmin::ShutdownSystemUpdateLoop(SingletonSystemManager* singlSystemManager)
+{
+        singlSystemManager->m_runSystems = false;
+        singlSystemManager->m_systemManagerThread.join();
+}
+
 void EntityAdmin::Initialize()
 {
         ECSInitialize();

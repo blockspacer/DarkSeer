@@ -1,5 +1,6 @@
 #pragma once
 #include <SingletonTimer.h>
+struct EntityAdmin;
 
 struct SingletonSystemManager_DEBUG_METADATA
 {
