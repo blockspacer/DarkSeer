@@ -107,7 +107,7 @@
     <None Include="source\Core\public\Enums\SCANCODES_FLAG0.ENUM" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h" />
+    <ClInclude Include="resource\public\resource.h" />
     <ClInclude Include="source\3rdParty\public\d3dx12.h" />
     <ClInclude Include="source\Admin\public\EntityAdmin.h" />
     <ClInclude Include="source\Admin\public\SystemAdmin.h" />
@@ -136,10 +136,10 @@
     <ClInclude Include="source\Utility\public\WindowUtility.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="DarkSeer.rc" />
+    <ResourceCompile Include="resource\private\DarkSeer.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="DarkSeer.ico" />
+    <Image Include="resource\private\DarkSeer.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
