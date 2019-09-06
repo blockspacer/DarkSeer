@@ -2,7 +2,7 @@
 // EnableDebugLayer();
 // auto MainAdapter = GetAdapter(false);
 // auto MainDevice  = CreateDevice(MainAdapter);
-#include "../resource.h"
+//#include "../resource1.h"
 #include <Console.h>
 #include <SingletonSystemManager.h>
 #include <SingletonTimer.h>

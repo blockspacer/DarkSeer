@@ -139,7 +139,6 @@
     <ResourceCompile Include="DarkSeer.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="aimsparrowfull_B1B_icon.ico" />
     <Image Include="DarkSeer.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
