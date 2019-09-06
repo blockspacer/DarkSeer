@@ -87,7 +87,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\main.cpp" />
-    <ClCompile Include="source\Utility\private\SystemUtility.cpp" />
     <ClCompile Include="source\Utility\private\TimerUtility.cpp" />
     <ClCompile Include="source\Utility\private\WindowFactories.cpp" />
     <ClCompile Include="source\utility\private\InputUtility.cpp" />
@@ -127,7 +126,6 @@
     <ClInclude Include="source\Components\public\SingletonInput.h" />
     <ClInclude Include="source\Core\public\TaggedPrimitives.h" />
     <ClInclude Include="source\Core\public\RawInput.Enums.h" />
-    <ClInclude Include="source\Utility\public\SystemUtility.h" />
     <ClInclude Include="source\Utility\public\TimerUtility.h" />
     <ClInclude Include="source\Utility\public\WindowUtility.h" />
   </ItemGroup>
