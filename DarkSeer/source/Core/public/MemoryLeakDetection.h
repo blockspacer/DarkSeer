@@ -5,8 +5,14 @@
 
 #ifdef _DEBUG
 #define new new (_NORMAL_BLOCK, __FILE__, __LINE__)
-#else
-#define new new
+#endif
+
+#ifdef _DEBUG
+#define malloc(size) _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__)
+#endif
+
+#ifdef _DEBUG
+#define _aligned_malloc(size, alignment) _aligned_malloc_dbg(size, alignment, __FILE__, __LINE__)
 #endif
 
 template <typename T, typename... TArgs>
@@ -22,11 +28,3 @@ inline void destroy(T* mem)
 {
         mem->~T();
 }
-
-#ifdef _DEBUG
-#define malloc(size) _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
-#ifdef _DEBUG
-#define _aligned_malloc(size, alignment) _aligned_malloc_dbg(size, alignment, __FILE__, __LINE__)
-#endif
