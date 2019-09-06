@@ -129,17 +129,16 @@ void EntityAdmin::Initialize()
         m_singletonConsole       = static_cast<SingletonConsole*>(ECSAllocateSingleton(sizeof(SingletonConsole)));
         m_singletonSystemManager = static_cast<SingletonSystemManager*>(ECSAllocateSingleton(sizeof(SingletonSystemManager)));
         m_singletonTimer         = static_cast<SingletonTimer*>(ECSAllocateSingleton(sizeof(SingletonTimer)));
-#pragma push_macro("new")
-#undef new
-        new (m_singletonInput) SingletonInput();
-        new (m_singletonSystemManager) SingletonSystemManager();
-#pragma pop_macro("new")
+
+        construct(m_singletonInput);
+        construct(m_singletonSystemManager);
 }
 
 void EntityAdmin::ShutDown()
 {
-        m_singletonInput->~SingletonInput();
-        m_singletonSystemManager->~SingletonSystemManager();
+        destroy(m_singletonInput);
+        destroy(m_singletonSystemManager);
+
         ECSShutDown();
 }
 
