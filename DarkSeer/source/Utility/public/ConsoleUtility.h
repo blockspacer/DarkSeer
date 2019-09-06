@@ -10,6 +10,10 @@ namespace ConsoleUtil
                 success = freopen("CONOUT$", "w", stdout);
                 success = freopen("CONIN$", "r", stdin);
                 success = freopen("CONOUT$", "w", stderr);
+
+                HMENU hMenu = GetSystemMenu(GetConsoleWindow(), FALSE);
+                if (hMenu != NULL)
+                        DeleteMenu(hMenu, SC_CLOSE, MF_BYCOMMAND);
         }
         inline void DisableQuickEdit()
         {

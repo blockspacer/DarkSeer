@@ -12,7 +12,6 @@ int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pC
         _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
         g_userEntityAdmin.ComponentsInitialize();
-
         auto singlInput  = g_userEntityAdmin.GetSingletonInput();
         auto singlWindow = g_userEntityAdmin.GetSingletonWindow();
         g_userEntityAdmin.WindowsInitialize(singlInput, singlWindow);
