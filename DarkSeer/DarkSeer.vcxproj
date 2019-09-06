@@ -87,6 +87,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\Systems\private\ConsoleSystem.cpp" />
+    <ClCompile Include="source\Systems\private\DebugFixedUpdateSystem.cpp" />
+    <ClCompile Include="source\Systems\private\InputSystem.cpp" />
     <ClCompile Include="source\Utility\private\TimerUtility.cpp" />
     <ClCompile Include="source\Utility\private\WindowFactories.cpp" />
     <ClCompile Include="source\utility\private\InputUtility.cpp" />
@@ -115,9 +118,11 @@
     <ClInclude Include="source\ECS\public\ECSMemory.h" />
     <ClInclude Include="source\ECS\public\ECSMetaFunctions.h" />
     <ClInclude Include="source\PCH\public\stdafx.h" />
-    <ClInclude Include="source\Core\public\Console.h" />
+    <ClInclude Include="source\Systems\public\ConsoleSystem.h" />
+    <ClInclude Include="source\Systems\public\DebugFixedUpdateSystem.h" />
+    <ClInclude Include="source\Systems\public\InputSystem.h" />
+    <ClInclude Include="source\Utility\public\ConsoleUtility.h" />
     <ClInclude Include="source\Core\public\DSMath.h" />
-    <ClInclude Include="source\Core\public\Engine.h" />
     <ClInclude Include="source\Utility\private\WindowFactories.h" />
     <ClInclude Include="source\Core\public\DirectXHelpers.h" />
     <ClInclude Include="source\Utility\public\InputUtility.h" />

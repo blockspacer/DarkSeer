@@ -1,6 +1,4 @@
-#include <Console.h>
 #include <ECSMemory.h>
-#include <Engine.h>
 #include <EntityAdmin.h>
 
 #include <InputUtility.h>
@@ -108,7 +106,7 @@ void EntityAdmin::SystemsShutdown(SingletonSystemManager* singlSystemManager)
 
 void EntityAdmin::WindowsInitialize(SingletonInput* singlInput, SingletonWindow* singlWindow)
 {
-        InputUtil::RegisterDefaultRawInputDevices(); 
+        InputUtil::RegisterDefaultRawInputDevices();
         WindowUtil::CreateAndShowMainWindow(m_singletonWindow);
         InputUtil::InitializeInputWndProc(m_singletonInput, m_singletonWindow);
 }

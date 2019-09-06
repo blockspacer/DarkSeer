@@ -17,9 +17,10 @@ inline void ECSShutDown()
 }
 
 // Takes a pointer and assigns it an allocated address from ECS memory
-//	if the type pointed-to-type has a tag "RequiresConstructor":
-//		it will also call the objects constructor and later will call its destructor
-//		when ECSShutDown is called
+//	if the pointed-to-type has a member struct "requires_constructor_tag":
+//		it will also call the objects constructor
+//	if the pointed-to-type has a member struct "requires_destructor_tag":
+//		the types destructor will be called on ECSShutdown
 template <typename T>
 inline void ECSAllocateSingleton(T*& objPtr)
 {

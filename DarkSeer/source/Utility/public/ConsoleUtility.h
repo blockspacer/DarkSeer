@@ -1,11 +1,8 @@
 #pragma once
+#include <SingletonConsole.h>
+
 namespace ConsoleUtil
 {
-        inline namespace Globals
-        {
-                inline bool g_consoleActivated     = false;
-                inline HWND g_prevForegroundWindow = 0;
-        } // namespace Globals
         inline void InitializeConsole()
         {
                 AllocConsole();
@@ -49,18 +46,16 @@ namespace ConsoleUtil
                 fclose(stdout);
                 FreeConsole();
         }
-        inline void Begin()
+        inline void Begin(SingletonConsole* singlConsole)
         {
-                g_consoleActivated      = true;
-                g_prevForegroundWindow  = GetForegroundWindow();
-                auto ConsoleInputHandle = GetStdHandle(STD_INPUT_HANDLE);
+                singlConsole->m_prevForegroundWindow = GetForegroundWindow();
+                auto ConsoleInputHandle              = GetStdHandle(STD_INPUT_HANDLE);
                 FlushConsoleInputBuffer(ConsoleInputHandle);
                 SetForegroundWindow(GetConsoleWindow());
         }
-        inline void End()
+        inline void End(SingletonConsole* singlConsole)
         {
-                g_consoleActivated = false;
-                SetForegroundWindow(g_prevForegroundWindow);
+                SetForegroundWindow(singlConsole->m_prevForegroundWindow);
         }
         inline float GetFloatNoFail(std::string promptMessage)
         {
@@ -82,9 +77,5 @@ namespace ConsoleUtil
                 } while (!read_count || read_count != cinStrBuffer.size());
 
                 return cin_value;
-        }
-        inline bool IsActive()
-        {
-                return g_consoleActivated;
         }
 } // namespace ConsoleUtil
