@@ -1,10 +1,7 @@
 #pragma once
 struct InputSystem
 {
-    private:
-        EntityAdmin* m_Admin = &g_userEntityAdmin;
-    public:
-        void Initialize();
-        void Update();
-        void ShutDown();
+        static void Initialize(EntityAdmin* entityAdmin);
+        static void Update(EntityAdmin* entityAdmin);
+        static void ShutDown(EntityAdmin* entityAdmin);
 };

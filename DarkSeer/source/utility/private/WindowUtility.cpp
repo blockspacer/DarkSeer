@@ -13,7 +13,6 @@ namespace WindowUtil
                         case WM_DESTROY:
                         {
                                 PostQuitMessage(NO_ERROR);
-                                g_userEntityAdmin.ShutDown();
                                 break;
                         }
                 }

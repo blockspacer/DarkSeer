@@ -1,8 +1,11 @@
 #pragma once
-struct SystemAdmin
+struct EntityAdmin;
+struct SingletonTimer;
+#include <SingletonSystemManager.h>
+
+struct SystemManager
 {
-        void Initialize();
-        void Update();
-        void Shutdown();
+
+		void ShutDown(EntityAdmin* entityAdmin);
 };
-inline SystemAdmin g_userSystemAdmin;
+inline SystemManager g_userSystemManager;

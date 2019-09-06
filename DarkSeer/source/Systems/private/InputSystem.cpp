@@ -1,11 +1,11 @@
 #include <InputSystem.h>
 #include <SingletonInput.h>
 
-void InputSystem::Initialize()
+void InputSystem::Initialize(EntityAdmin* entityAdmin)
 {}
 
-void InputSystem::Update()
+void InputSystem::Update(EntityAdmin* entityAdmin)
 {}
 
-void InputSystem::ShutDown()
+void InputSystem::ShutDown(EntityAdmin* entityAdmin)
 {}

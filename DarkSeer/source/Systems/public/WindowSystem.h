@@ -1,10 +1,7 @@
 #pragma once
 struct WindowSystem
 {
-    private:
-        EntityAdmin* m_Admin = &g_userEntityAdmin;
-    public:
-        void Initialize();
-        void Update();
-        void ShutDown();
+        void Initialize(EntityAdmin* entityAdmin);
+        void Update(EntityAdmin* entityAdmin);
+        void ShutDown(EntityAdmin* entityAdmin);
 };

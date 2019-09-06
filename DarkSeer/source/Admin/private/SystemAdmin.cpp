@@ -1,11 +1,12 @@
 #include <SystemAdmin.h>
-#include <InputSystem.h>
 
-void SystemAdmin::Initialize()
-{}
+#include <SingletonSystemManager.h>
+#include <SingletonTimer.h>
+#include <SingletonWindow.h>
+#include <TimerUtility.h>
 
-void SystemAdmin::Update()
-{}
-
-void SystemAdmin::Shutdown()
-{}
+void SystemManager::ShutDown(EntityAdmin* entityAdmin)
+{
+        entityAdmin->GetSingletonSystemManager()->m_runSystems = false;
+        entityAdmin->GetSingletonSystemManager()->m_systemManagerThread.join();
+}
