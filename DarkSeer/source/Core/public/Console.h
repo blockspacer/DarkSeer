@@ -1,5 +1,5 @@
 #pragma once
-inline namespace Console
+namespace ConsoleUtil
 {
         inline namespace Globals
         {
@@ -87,4 +87,4 @@ inline namespace Console
         {
                 return g_consoleActivated;
         }
-} // namespace Console
+} // namespace ConsoleUtil

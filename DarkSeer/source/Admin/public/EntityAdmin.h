@@ -178,6 +178,10 @@ struct EntityAdmin
         void SystemsLaunch(SingletonTimer* singlTimer, SingletonSystemManager* singlSystemManager);
         void SystemsShutdown(SingletonSystemManager* singlSystemManager);
 
+		void WindowsInitialize(SingletonInput* singlInput, SingletonWindow* singlWindow);
+        void WindowsLaunch(SingletonWindow* singlWindow);
+        void WindowsShutdown(SingletonWindow* singlWindow);
+
         void ComponentsInitialize();
         void ComponentsShutdown();
 };

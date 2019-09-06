@@ -50,8 +50,8 @@ void EntityAdmin::SystemUpdateLoop(EntityAdmin*            entityAdmin,
                     singlTimer->m_deltaTime.count() / singlSystemManager->m_fixedUpdateTickRates[i].count();
 
                 SingletonTimer::value_type timerDifference =
-                    singlTimer->m_totalTime - ((numSteps * singlSystemManager->m_fixedUpdateTickRates[i]) +
-                                               singlTimer->m_fixedUpdateTotalTimes[i]);
+                    singlTimer->m_totalTime -
+                    ((numSteps * singlSystemManager->m_fixedUpdateTickRates[i]) + singlTimer->m_fixedUpdateTotalTimes[i]);
 
                 SingletonTimer::value_type::rep numAccumulationSteps =
                     timerDifference.count() / singlSystemManager->m_fixedUpdateTickRates[i].count();
@@ -99,9 +99,23 @@ void EntityAdmin::SystemsLaunch(SingletonTimer* singlTimer, SingletonSystemManag
 {
         singlSystemManager->m_systemManagerThread =
             std::thread(LaunchSystemUpdateLoopInternal, this, singlTimer, singlSystemManager);
+}
 
-        auto singlWindow = GetSingletonWindow();
+void EntityAdmin::SystemsShutdown(SingletonSystemManager* singlSystemManager)
+{
+        singlSystemManager->m_runSystems = false;
+        singlSystemManager->m_systemManagerThread.join();
+}
 
+void EntityAdmin::WindowsInitialize(SingletonInput* singlInput, SingletonWindow* singlWindow)
+{
+        InputUtil::RegisterDefaultRawInputDevices(); 
+        WindowUtil::CreateAndShowMainWindow(m_singletonWindow);
+        InputUtil::InitializeInputWndProc(m_singletonInput, m_singletonWindow);
+}
+
+void EntityAdmin::WindowsLaunch(SingletonWindow* singlWindow)
+{
         singlWindow->m_dispatchMessages = true;
         while (singlWindow->m_dispatchMessages)
         {
@@ -114,10 +128,9 @@ void EntityAdmin::SystemsLaunch(SingletonTimer* singlTimer, SingletonSystemManag
         }
 }
 
-void EntityAdmin::SystemsShutdown(SingletonSystemManager* singlSystemManager)
+void EntityAdmin::WindowsShutdown(SingletonWindow* singlWindow)
 {
-        singlSystemManager->m_runSystems = false;
-        singlSystemManager->m_systemManagerThread.join();
+        singlWindow->m_dispatchMessages = false;
 }
 
 void EntityAdmin::ComponentsInitialize()

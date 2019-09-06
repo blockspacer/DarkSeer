@@ -1,13 +1,20 @@
 #include <SingletonInput.h>
 #include "InputBuffer.h"
 
-InputBuffer::InputBuffer() :
-    m_inputFrames(),
-    m_bottom(),
-    m_top(),
-    m_currFrameBottom(),
-    m_currFrameTop()
-{}
+InputBuffer::InputBuffer() : m_currFrameBottom(0), m_currFrameTop(0)
+{
+        // allocate input buffer
+       m_inputFrames =
+            (InputFrame*)_aligned_malloc(sizeof(InputFrame) * MAX_INPUT_FRAMES_PER_FRAME, 64);
+        assert(m_inputFrames);
+
+        // set circular buffer bottom/top to 0
+        m_bottom                         = 0;
+        m_top                            = 0;
+        // set previous press state to 0 for all buttons
+#pragma warning(suppress : 6385)
+        memset(&m_inputFrames[-1 & InputBuffer::MASK].m_pressState, 0, sizeof(KeyState));
+}
 
 
 void InputBuffer::push_back(InputFrame inputFrame)

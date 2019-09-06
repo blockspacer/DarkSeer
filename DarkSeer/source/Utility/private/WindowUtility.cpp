@@ -13,6 +13,7 @@ namespace WindowUtil
                         case WM_DESTROY:
                         {
                                 PostQuitMessage(NO_ERROR);
+                                g_userEntityAdmin.WindowsShutdown(g_userEntityAdmin.GetSingletonWindow());
                                 break;
                         }
                 }

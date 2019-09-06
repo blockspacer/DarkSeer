@@ -25,9 +25,10 @@ inline void ECSAllocateSingleton(T*& objPtr)
 {
         objPtr = reinterpret_cast<T*>(ECSNextAlloc);
         ECSNextAlloc += sizeof(T);
+
         if constexpr (requires_constructor<T>::value)
-        {
                 construct(objPtr);
+
+        if constexpr (requires_destructor<T>::value)
                 ECSSingletonDestructors.push_back(std::bind([objPtr]() { destroy(objPtr); }));
-        }
 }

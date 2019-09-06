@@ -18,6 +18,8 @@ struct SingletonSystemManager_DEBUG_METADATA
 struct SingletonSystemManager : SingletonSystemManager_DEBUG_METADATA
 {
         struct requires_constructor_tag;
+        struct requires_destructor_tag;
+
         bool        m_runSystems;
         std::thread m_systemManagerThread;
 

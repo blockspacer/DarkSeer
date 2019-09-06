@@ -137,11 +137,11 @@ struct InputBuffer
         InputBuffer();
         //================================================================
         // producer thread mutators/accessors
-        void push_back(InputFrame inputFrame);
-        void emplace_back(std::tuple<long, long> mouseDeltas,
-                          KeyCode                buttonSignature,
-                          int16_t                scrollDelta,
-                          KeyTransition          transitionState);
+        void                     push_back(InputFrame inputFrame);
+        void                     emplace_back(std::tuple<long, long> mouseDeltas,
+                                              KeyCode                buttonSignature,
+                                              int16_t                scrollDelta,
+                                              KeyTransition          transitionState);
         inline const InputFrame& back() const
         {
                 return m_inputFrames[m_bottom - 1 & MASK];
@@ -149,7 +149,7 @@ struct InputBuffer
         //================================================================
         // captures the current m_top and m_bottom for use with consumer thread accessors (call once per input frame)
         void Signal();
-		// consumer thread accessors
+        // consumer thread accessors
         inline iterator begin() const
         {
                 return iterator(*this, m_currFrameTop);
@@ -163,4 +163,8 @@ struct InputBuffer
                 return begin() == end();
         }
         //================================================================
+		inline ~InputBuffer()
+		{
+                _aligned_free(m_inputFrames);
+		}
 };

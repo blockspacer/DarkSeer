@@ -21,19 +21,19 @@ inline namespace Engine
 
                         for (auto& inputFrame : singlInput->m_inputBuffer)
                         {
-                                if (inputFrame.m_pressState.ShiftLeft && inputFrame.IsKeyPress(KeyCode::C) && !Console::IsActive())
+                                if (inputFrame.m_pressState.ShiftLeft && inputFrame.IsKeyPress(KeyCode::C) && !ConsoleUtil::IsActive())
                                 {
-                                        Console::Begin();
+                                        ConsoleUtil::Begin();
 
                                         float vector[3];
 
                                         std::cout << "enter vector values:\n";
-                                        vector[0] = Console::GetFloatNoFail("x:");
-                                        vector[1] = Console::GetFloatNoFail("y:");
-                                        vector[2] = Console::GetFloatNoFail("z:");
+                                        vector[0] = ConsoleUtil::GetFloatNoFail("x:");
+                                        vector[1] = ConsoleUtil::GetFloatNoFail("y:");
+                                        vector[2] = ConsoleUtil::GetFloatNoFail("z:");
                                         std::cout << "[ " << vector[0] << ", " << vector[1] << ", " << vector[2] << " ]\n";
 
-                                        Console::End();
+                                        ConsoleUtil::End();
                                 }
                         }
                 }
