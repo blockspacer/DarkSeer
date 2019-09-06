@@ -114,6 +114,7 @@
     <ClInclude Include="source\Components\public\SingletonSystemManager.h" />
     <ClInclude Include="source\Components\public\SingletonTimer.h" />
     <ClInclude Include="source\Components\public\SingletonWindow.h" />
+    <ClInclude Include="source\Core\public\MemoryLeakDetection.h" />
     <ClInclude Include="source\ECS\public\ECSMemory.h" />
     <ClInclude Include="source\PCH\public\stdafx.h" />
     <ClInclude Include="source\Systems\public\InputSystem.h" />

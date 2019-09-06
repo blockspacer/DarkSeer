@@ -8,3 +8,11 @@
 #else
 #define new new
 #endif
+
+#ifdef _DEBUG
+#define malloc(size) _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__)
+#endif
+
+#ifdef _DEBUG
+#define _aligned_malloc(size, alignment) _aligned_malloc_dbg(size, alignment, __FILE__, __LINE__)
+#endif

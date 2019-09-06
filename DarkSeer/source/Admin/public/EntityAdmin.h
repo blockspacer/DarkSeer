@@ -172,5 +172,6 @@ struct EntityAdmin
         void ShutdownSystemUpdateLoop(SingletonSystemManager* singlSystemManager);
 
         void Initialize();
+        void ShutDown();
 };
 inline EntityAdmin g_userEntityAdmin;

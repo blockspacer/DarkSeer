@@ -35,35 +35,16 @@ struct SystemConceptB
 
 int WINAPI WinMain(_In_ HINSTANCE _hInstance, _In_opt_ HINSTANCE, _In_ LPSTR _pCmdLine, _In_ int _nCmdShow)
 {
+        _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
         g_userEntityAdmin.Initialize();
+        g_userEntityAdmin.ShutDown();
+        //auto singlSysManager = g_userEntityAdmin.GetSingletonSystemManager();
+        //auto singlTimer      = g_userEntityAdmin.GetSingletonTimer();
 
-        auto singlSysManager = g_userEntityAdmin.GetSingletonSystemManager();
-        auto singlTimer      = g_userEntityAdmin.GetSingletonTimer();
-
-        g_userEntityAdmin.AttachSystem<ConsoleSystem>(singlSysManager);
-        g_userEntityAdmin.AttachSystem<SystemConceptB>(singlSysManager);
-        g_userEntityAdmin.LaunchSystemUpdateLoop(singlTimer, singlSysManager);
-		//ConsoleSystem::Initialize;
-
+        //g_userEntityAdmin.AttachSystem<ConsoleSystem>(singlSysManager);
         //g_userEntityAdmin.AttachSystem<SystemConceptB>(singlSysManager);
         //g_userEntityAdmin.LaunchSystemUpdateLoop(singlTimer, singlSysManager);
-
-        // InitializeConsole();
-        // Console::DisableQuickEdit();
-
-        // InputUtil::RegisterDefaultRawInputDevices();
-        // WindowUtil::CreateAndShowMainWindow(m_singletonWindow);
-        // InputUtil::InitializeInputBuffer(m_singletonInput);
-        // InputUtil::InitializeInputWndProc(m_singletonInput, m_singletonWindow);
-
-        // LaunchSystems(m_singletonSystemManager);
-        // LaunchWnproc(m_singletonWindow);
-        // PostShutDown(m_singletonInput);
-
-        //// input system shutdown
-        // entityAdmin->GetSingletonWindow()->m_dispatchMessages = false;
-        //// input system postshutdown
-        // InputUtil::ReleaseInputBufferMemory(singlInput);
 
         return 0;
 }

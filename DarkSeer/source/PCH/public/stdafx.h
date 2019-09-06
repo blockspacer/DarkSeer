@@ -22,6 +22,7 @@
 #include <type_traits>
 #include <vector>
 
+
 // directx12
 #include <DirectXMath.h>
 #include <d3d12.h>
@@ -35,12 +36,12 @@
 #include <wrl.h>
 using namespace Microsoft::WRL;
 
+#include <MemoryLeakDetection.h>
+
 #include <TaggedPrimitives.h>
 
-
-#include <EntityAdmin.h>
 #include <DSMath.h>
 #include <DirectXHelpers.h>
+#include <EntityAdmin.h>
 #include <MemoryDefines.h>
 #include <RawInput.Enums.h>
-
