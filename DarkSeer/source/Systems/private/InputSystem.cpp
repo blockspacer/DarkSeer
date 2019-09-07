@@ -7,22 +7,11 @@ void InputSystem::PreUpdate(EntityAdmin* entityAdmin)
 {
         auto singlInput   = entityAdmin->GetSingletonInput();
         auto singlConsole = entityAdmin->GetSingletonConsole();
-
-        singlInput->m_inputBuffer.Signal();
-        for (auto& inputFrame : singlInput->m_inputBuffer)
+        auto singlInputBuffer = singlInput->GetInputBuffer();
+        singlInputBuffer->Signal();
+        for (auto itr = singlInputBuffer->begin(); itr != singlInputBuffer->end(); itr++)
         {
-                std::string echo;
-                if (inputFrame.IsKeyPress(KeyCode::C))
-                {
-                        ConsoleUtil::Begin(singlConsole);
-                        std::cout << "enter a string\n";
-                        std::cin >> echo;
-                        for (auto& itr : echo)
-                                itr = std::toupper(itr);
-                        std::cout << echo << std::endl;
-                        std::cout << "enter anything to continue\n";
-                        std::cin >> echo;
-                        ConsoleUtil::End(singlConsole);
-                }
+                if (itr.IsKeyBeginPressFrame(KeyCode::C))
+					std::cout << "C\n";
         }
 }

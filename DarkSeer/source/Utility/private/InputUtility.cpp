@@ -42,7 +42,7 @@ namespace InputUtil
                 InputFrame tempInputFrame;
                 memset(((char*)&tempInputFrame) + sizeof(KeyState), 0, sizeof(InputFrame) - sizeof(KeyState));
 
-                auto* singlInputBuffer = &const_cast<SingletonInput*>(g_userEntityAdmin.GetSingletonInput())->m_inputBuffer;
+				auto singlInputBuffer = g_userEntityAdmin.GetSingletonInput()->GetInputBuffer();
                 tempInputFrame.m_pressState = singlInputBuffer->back().m_pressState;
 
                 switch (message)

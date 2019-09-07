@@ -12,15 +12,22 @@ struct alignas(CACHE_LINE) InputFrame
         static_assert(DATA_SIZE <= CACHE_LINE);
         std::enable_if<DATA_SIZE - CACHE_LINE != 0, char>::type m_padding[CACHE_LINE - DATA_SIZE];
 
-        inline bool IsKeyPress(KeyCode keyCode) const
+        inline bool IsKeyPressFrame(KeyCode keyCode) const
         {
                 return m_buttonSignature == keyCode && m_transitionState == KeyTransition::Down;
         }
-        inline bool IsKeyRelease(KeyCode keyCode) const
+        inline bool IsKeyReleaseFrame(KeyCode keyCode) const
         {
                 return m_buttonSignature == keyCode && m_transitionState == KeyTransition::Up;
         }
+        inline bool IsKeyHeld(KeyCode keyCode) const
+        {
+                return m_pressState.IsKeyDown(keyCode);
+        }
+		inline bool AreKeysHeld(std::underlying_type_t<KeyCode> keyCodes) const
+		{
 
+		}
         InputFrame() : m_pressState(), m_mouseDeltas(), m_buttonSignature(), m_scrollDelta(), m_transitionState(), m_padding()
         {}
 };
@@ -31,7 +38,7 @@ struct InputBuffer
         struct iterator
         {
             private:
-                using value_type      = InputFrame;
+                // using value_type      = InputFrame;
                 using difference_type = int64_t;
                 using pointer         = InputFrame*;
                 using reference       = InputFrame&;
@@ -119,6 +126,30 @@ struct InputBuffer
                 {
                         return m_currIndex > other.m_currIndex;
                 }
+
+                inline bool IsKeyBeginPressFrame(KeyCode keyCode) const
+                {
+                        return m_owner.m_inputFrames[m_currIndex].IsKeyPressFrame(keyCode) &&
+                               !m_owner.m_inputFrames[m_currIndex - 1].IsKeyHeld(keyCode);
+                }
+                inline bool IsKeyPressFrame(KeyCode keyCode) const
+                {
+                        return (**this).IsKeyPressFrame(keyCode);
+                }
+                inline bool IsKeyReleaseFrame(KeyCode keyCode) const
+                {
+                        return (**this).IsKeyReleaseFrame(keyCode);
+                }
+                inline bool IsKeyHeld(KeyCode keyCode) const
+                {
+                        return (**this).IsKeyHeld(keyCode);
+                }
+                inline bool IsKeyReleased(KeyCode keyCode) const
+                {
+                        return !(**this).IsKeyHeld(keyCode);
+                }
+                inline bool AreKeysHeld(std::underlying_type_t<KeyCode> keyCodes) const
+                {}
                 friend struct InputBuffer;
         };
 
@@ -134,7 +165,7 @@ struct InputBuffer
         const int64_t m_currFrameBottom;
         const int64_t m_currFrameTop;
         //================================================================
-        InputBuffer();
+
         //================================================================
         // producer thread mutators/accessors
         void                     push_back(InputFrame inputFrame);
@@ -163,8 +194,8 @@ struct InputBuffer
                 return begin() == end();
         }
         //================================================================
-		inline ~InputBuffer()
-		{
-                _aligned_free(m_inputFrames);
-		}
+    private:
+        InputBuffer();
+        ~InputBuffer();
+        friend struct SingletonInput;
 };

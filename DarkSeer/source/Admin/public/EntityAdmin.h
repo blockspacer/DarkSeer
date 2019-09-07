@@ -77,14 +77,6 @@ struct EntityAdmin
         SingletonConsole*       m_singletonConsole;
         SingletonTimer*         m_singletonTimer;
 
-    public:
-        SingletonInput*         GetSingletonInput();
-        SingletonWindow*        GetSingletonWindow();
-        SingletonConsole*       GetSingletonConsole();
-        SingletonSystemManager* GetSingletonSystemManager();
-        SingletonTimer*         GetSingletonTimer();
-
-    private:
         template <typename TSystemConcept>
         inline void AttachSystem_DEBUG_INJECT_META_DATA(SingletonSystemManager* singlSystemManager)
         {
@@ -133,8 +125,13 @@ struct EntityAdmin
         static void LaunchSystemUpdateLoopInternal(EntityAdmin*            entityAdmin,
                                                    SingletonTimer*         singlTimer,
                                                    SingletonSystemManager* singlSystemManager);
-
     public:
+        SingletonInput*         GetSingletonInput();
+        SingletonWindow*        GetSingletonWindow();
+        SingletonConsole*       GetSingletonConsole();
+        SingletonSystemManager* GetSingletonSystemManager();
+        SingletonTimer*         GetSingletonTimer();
+
         // If any of the follow function signatures are static members of the template paramater type:
         //	Update(EntityAdmin*)
         //	PreUpdate(EntityAdmin*)

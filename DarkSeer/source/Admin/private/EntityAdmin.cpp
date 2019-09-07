@@ -61,9 +61,6 @@ void EntityAdmin::SystemUpdateLoop(EntityAdmin*            entityAdmin,
                         singlTimer->m_fixedTotalTime = singlTimer->m_fixedUpdateTotalTimes[i];
                         singlSystemManager->m_fixedUpdateFunctions[i](entityAdmin);
                 }
-
-                // simulate frame going long
-                std::this_thread::sleep_for(std::chrono::milliseconds(std::rand() % 1000));
         }
 
         for (auto& postUpdate : singlSystemManager->m_postUpdateFunctions)

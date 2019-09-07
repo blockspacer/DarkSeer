@@ -22,9 +22,10 @@ inline namespace Enums
                 COUNT
         };
 #undef ENUM
-        constexpr uint8_t  INPUT_NUM_MOUSE_SCANCODES              = to_underlying_type(DummyMouseCodesEnum::COUNT);
-        constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES = to_underlying_type(KeyCode::COUNT) - INPUT_NUM_MOUSE_SCANCODES;
-        constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODES           = INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES / 3;
+        constexpr uint8_t  INPUT_NUM_MOUSE_SCANCODES = to_underlying_type(DummyMouseCodesEnum::COUNT);
+        constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES =
+            to_underlying_type(KeyCode::COUNT) - INPUT_NUM_MOUSE_SCANCODES;
+        constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODES = INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES / 3;
 #define ENUM(E, V) #E,
         constexpr const char* buttonSignatureToString[to_underlying_type(KeyCode::COUNT) + 1]{
 #include <Enums/SCANCODES_FLAG0.ENUM>
@@ -49,17 +50,27 @@ inline namespace Enums
 
 #include <Enums/MOUSE_SCANCODES.ENUM>
 
-                inline void KeyDown(KeyCode button)
+                inline void SetKeyDown(KeyCode button)
                 {
                         uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
                         uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
                         pressStateAlias[to_underlying_type(button) >> 6] |= mask;
                 }
-                inline void KeyUp(KeyCode button)
+                inline void SetKeyUp(KeyCode button)
                 {
                         uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
                         uint64_t mask                     = 1ULL << ((uint64_t)button & (64ULL - 1ULL));
                         pressStateAlias[to_underlying_type(button) >> 6] &= ~mask;
+                }
+                inline bool IsKeyDown(KeyCode keyCode) const
+                {
+                        uint64_t(&pressStateAlias)[_SZ64] = (uint64_t(&)[_SZ64]) * this;
+                        uint64_t mask                     = 1ULL << ((uint64_t)keyCode & (64ULL - 1ULL));
+                        return static_cast<bool>(pressStateAlias[to_underlying_type(keyCode) >> 6] & mask);
+                }
+                inline bool IsKeyUp(KeyCode keycode) const
+                {
+                        return !IsKeyDown(keycode);
                 }
         };
 #undef ENUM
