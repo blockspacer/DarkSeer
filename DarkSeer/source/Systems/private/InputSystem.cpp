@@ -16,5 +16,7 @@ void InputSystem::PreUpdate(EntityAdmin* entityAdmin)
                         std::cout << "C\n";
                 if (itr->IsKeyCodeSetHeld(KeyCodeSet({KeyCode::A, KeyCode::ShiftLeft, KeyCode::S})))
                         std::cout << "HelloSIMD\n";
+                if (itr.IsKeyHeld(KeyCode::A))
+                        std::cout << "A[][]";
         }
 }

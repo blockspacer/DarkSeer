@@ -16,6 +16,16 @@ struct KeyCodeSet
 
 struct alignas(CACHE_LINE) InputFrame
 {
+        InputFrame() :
+            m_keyStateHigh(),
+            m_keyStateLow(),
+            m_mouseDeltas(),
+            m_buttonSignature(),
+            m_scrollDelta(),
+            m_transitionState(),
+            m_padding()
+        {}
+
         KeyStateLow            m_keyStateLow;     //				32	B
         KeyStateHigh           m_keyStateHigh;    //				16	B
         std::tuple<long, long> m_mouseDeltas;     //				8	B
@@ -46,39 +56,28 @@ struct alignas(CACHE_LINE) InputFrame
                 reinterpret_cast<__m256i&>(m_keyStateLow) =
                     _mm256_andnot_si256(MM256FlagsLUT[to_underlying_type(keyCode)], reinterpret_cast<__m256i&>(m_keyStateLow));
         }
+
         inline bool IsKeyCodeSetHeld(KeyCodeSet keyCodeSet) const
         {
-                auto query = keyCodeSet.m_keyCodeSetInternal;
-                // bitwise and all 256 bits in parallel
-                auto masked = _mm256_and_si256(query, reinterpret_cast<const __m256i&>(m_keyStateLow));
-                // piecewise compare the 256 bits in 64 bit chunks
-                auto compared = _mm256_cmpeq_epi64(masked, query);
-                // check if all 64 bit chunks resulted in true
-                auto result = _mm256_testc_si256(compared, _mm256_set1_epi8(0xff));
-                return static_cast<bool>(result);
+                return IsKeyCodeHeldInternal(keyCodeSet.m_keyCodeSetInternal);
         }
 
         inline bool IsKeyHeld(KeyCode keyCode) const
         {
-                auto query = MM256FlagsLUT[to_underlying_type(keyCode)];
+                return IsKeyCodeHeldInternal(MM256FlagsLUT[to_underlying_type(keyCode)]);
+        }
+
+    private:
+		inline bool IsKeyCodeHeldInternal(__m256i query) const
+		{
                 // bitwise and all 256 bits in parallel
                 auto masked = _mm256_and_si256(query, reinterpret_cast<const __m256i&>(m_keyStateLow));
                 // piecewise compare the 256 bits in 64 bit chunks
                 auto compared = _mm256_cmpeq_epi64(masked, query);
                 // check if all 64 bit chunks resulted in true
-                auto result = _mm256_testc_si256(compared, _mm256_set1_epi8(0xff));
+                auto result = _mm256_testc_si256(compared, _mm256_set1_epi8('\xff'));
                 return static_cast<bool>(result);
-        }
-
-        InputFrame() :
-            m_keyStateHigh(),
-            m_keyStateLow(),
-            m_mouseDeltas(),
-            m_buttonSignature(),
-            m_scrollDelta(),
-            m_transitionState(),
-            m_padding()
-        {}
+		}
 };
 
 struct InputBuffer
