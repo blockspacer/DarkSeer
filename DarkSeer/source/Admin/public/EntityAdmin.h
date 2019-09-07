@@ -76,7 +76,7 @@ struct EntityAdmin
         SingletonWindow*        m_singletonWindow;
         SingletonConsole*       m_singletonConsole;
         SingletonTimer*         m_singletonTimer;
-
+        
         template <typename TSystemConcept>
         inline void AttachSystem_DEBUG_INJECT_META_DATA(SingletonSystemManager* singlSystemManager)
         {

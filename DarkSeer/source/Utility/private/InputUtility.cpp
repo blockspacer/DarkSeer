@@ -40,10 +40,11 @@ namespace InputUtil
         LRESULT InputWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
                 InputFrame tempInputFrame;
-                memset(((char*)&tempInputFrame) + sizeof(KeyState), 0, sizeof(InputFrame) - sizeof(KeyState));
+                memset(&tempInputFrame, 0, sizeof(InputFrame));
 
 				auto singlInputBuffer = g_userEntityAdmin.GetSingletonInput()->GetInputBuffer();
-                tempInputFrame.m_pressState = singlInputBuffer->back().m_pressState;
+                tempInputFrame.m_keyStateLow = singlInputBuffer->back().m_keyStateLow;
+                tempInputFrame.m_keyStateHigh = singlInputBuffer->back().m_keyStateHigh;
 
                 switch (message)
                 {
@@ -188,7 +189,7 @@ namespace InputUtil
                         case WM_KILLFOCUS:
                         {
                                 // set all press states to released
-                                memset(&tempInputFrame.m_pressState, 0, sizeof(tempInputFrame.m_pressState));
+                                memset(&tempInputFrame.m_keyStateLow, 0, sizeof(tempInputFrame.m_keyStateLow));
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
                         }

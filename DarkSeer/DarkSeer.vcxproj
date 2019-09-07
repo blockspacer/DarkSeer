@@ -53,7 +53,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <ForcedIncludeFiles>stdafx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;$(ProjectDir)/source/Core/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;$(ProjectDir)/source/Core/public;$(ProjectDir)/Tables/Input;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -70,7 +70,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;$(ProjectDir)/source/Core/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;$(ProjectDir)/source/Core/public;$(ProjectDir)/Tables/Input;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>stdafx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <Link>
@@ -100,10 +100,6 @@
       <FileType>Document</FileType>
       <DestinationFolders Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)dll</DestinationFolders>
     </CopyFileToFolders>
-    <None Include="source\Core\public\Enums\MOUSE_SCANCODES.ENUM" />
-    <None Include="source\Core\public\Enums\SCANCODES_FLAG1.ENUM" />
-    <None Include="source\Core\public\Enums\SCANCODES_FLAG2.ENUM" />
-    <None Include="source\Core\public\Enums\SCANCODES_FLAG0.ENUM" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource\public\resource.h" />
@@ -133,12 +129,21 @@
     <ClInclude Include="source\Core\public\RawInput.Enums.h" />
     <ClInclude Include="source\Utility\public\TimerUtility.h" />
     <ClInclude Include="source\Utility\public\WindowUtility.h" />
+    <ClInclude Include="Tables\Input\MM256FlagLUT.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource\private\DarkSeer.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resource\private\DarkSeer.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Tables\Input\SCANCODES64_1.ENUM" />
+    <None Include="Tables\Input\SCANCODES64_2.ENUM" />
+    <None Include="Tables\Input\SCANCODES64_3.ENUM" />
+    <None Include="Tables\Input\SCANCODES64_4.ENUM" />
+    <None Include="Tables\Input\SCANCODES64_5.ENUM" />
+    <None Include="Tables\Input\SCANCODES64_6.ENUM" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,7 +1,0 @@
-ENUM(mouseLeft,)
-ENUM(mouseRight,)
-ENUM(mouseMiddle,)
-ENUM(mouseBack,)
-ENUM(mouseForward,)
-ENUM(mouseScrollVertical,)
-ENUM(mouseScrollHorizontal,) 

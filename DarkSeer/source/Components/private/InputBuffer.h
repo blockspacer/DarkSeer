@@ -1,14 +1,30 @@
 #pragma once
+struct KeyCodeSet
+{
+        inline KeyCodeSet(std::initializer_list<KeyCode> keyCodes)
+        {
+                m_keyCodeSetInternal = _mm256_setzero_si256();
+                for (auto& keyCode : keyCodes)
+                        m_keyCodeSetInternal =
+                            _mm256_or_si256(m_keyCodeSetInternal, MM256FlagsLUT[to_underlying_type(keyCode)]);
+        }
+
+    private:
+        __m256i m_keyCodeSetInternal;
+        friend struct InputFrame;
+};
+
 struct alignas(CACHE_LINE) InputFrame
 {
-        KeyState               m_pressState;      //				48	B
+        KeyStateLow            m_keyStateLow;     //				32	B
+        KeyStateHigh           m_keyStateHigh;    //				16	B
         std::tuple<long, long> m_mouseDeltas;     //				8	B
         KeyCode                m_buttonSignature; // buttonId //	2	B
         int16_t                m_scrollDelta;     //				2	B
         KeyTransition          m_transitionState; // up or down //	1	B
 
-        static constexpr auto DATA_SIZE = sizeof(m_pressState) + sizeof(m_mouseDeltas) + sizeof(m_buttonSignature) +
-                                          sizeof(m_scrollDelta) + sizeof(m_transitionState);
+        static constexpr auto DATA_SIZE = sizeof(m_keyStateLow) + sizeof(m_keyStateHigh) + sizeof(m_mouseDeltas) +
+                                          sizeof(m_buttonSignature) + sizeof(m_scrollDelta) + sizeof(m_transitionState);
         static_assert(DATA_SIZE <= CACHE_LINE);
         std::enable_if<DATA_SIZE - CACHE_LINE != 0, char>::type m_padding[CACHE_LINE - DATA_SIZE];
 
@@ -20,15 +36,48 @@ struct alignas(CACHE_LINE) InputFrame
         {
                 return m_buttonSignature == keyCode && m_transitionState == KeyTransition::Up;
         }
+        inline void SetKeyHeld(KeyCode keyCode)
+        {
+                reinterpret_cast<__m256i&>(m_keyStateLow) =
+                    _mm256_or_si256(reinterpret_cast<__m256i&>(m_keyStateLow), MM256FlagsLUT[to_underlying_type(keyCode)]);
+        }
+        inline void SetKeyReleased(KeyCode keyCode)
+        {
+                reinterpret_cast<__m256i&>(m_keyStateLow) =
+                    _mm256_andnot_si256(MM256FlagsLUT[to_underlying_type(keyCode)], reinterpret_cast<__m256i&>(m_keyStateLow));
+        }
+        inline bool IsKeyCodeSetHeld(KeyCodeSet keyCodeSet) const
+        {
+                auto query = keyCodeSet.m_keyCodeSetInternal;
+                // bitwise and all 256 bits in parallel
+                auto masked = _mm256_and_si256(query, reinterpret_cast<const __m256i&>(m_keyStateLow));
+                // piecewise compare the 256 bits in 64 bit chunks
+                auto compared = _mm256_cmpeq_epi64(masked, query);
+                // check if all 64 bit chunks resulted in true
+                auto result = _mm256_testc_si256(compared, _mm256_set1_epi8(0xff));
+                return static_cast<bool>(result);
+        }
+
         inline bool IsKeyHeld(KeyCode keyCode) const
         {
-                return m_pressState.IsKeyDown(keyCode);
+                auto query = MM256FlagsLUT[to_underlying_type(keyCode)];
+                // bitwise and all 256 bits in parallel
+                auto masked = _mm256_and_si256(query, reinterpret_cast<const __m256i&>(m_keyStateLow));
+                // piecewise compare the 256 bits in 64 bit chunks
+                auto compared = _mm256_cmpeq_epi64(masked, query);
+                // check if all 64 bit chunks resulted in true
+                auto result = _mm256_testc_si256(compared, _mm256_set1_epi8(0xff));
+                return static_cast<bool>(result);
         }
-		inline bool AreKeysHeld(std::underlying_type_t<KeyCode> keyCodes) const
-		{
 
-		}
-        InputFrame() : m_pressState(), m_mouseDeltas(), m_buttonSignature(), m_scrollDelta(), m_transitionState(), m_padding()
+        InputFrame() :
+            m_keyStateHigh(),
+            m_keyStateLow(),
+            m_mouseDeltas(),
+            m_buttonSignature(),
+            m_scrollDelta(),
+            m_transitionState(),
+            m_padding()
         {}
 };
 
@@ -148,8 +197,6 @@ struct InputBuffer
                 {
                         return !(**this).IsKeyHeld(keyCode);
                 }
-                inline bool AreKeysHeld(std::underlying_type_t<KeyCode> keyCodes) const
-                {}
                 friend struct InputBuffer;
         };
 
@@ -199,3 +246,5 @@ struct InputBuffer
         ~InputBuffer();
         friend struct SingletonInput;
 };
+
+KeyCodeSet CreateKeyCodeSet(std::initializer_list<KeyCode> keyCodes);

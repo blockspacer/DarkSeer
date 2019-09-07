@@ -12,7 +12,7 @@ InputBuffer::InputBuffer() : m_currFrameBottom(0), m_currFrameTop(0)
         m_top    = 0;
         // set previous press state to 0 for all buttons
 #pragma warning(suppress : 6385)
-        memset(&m_inputFrames[-1 & InputBuffer::MASK].m_pressState, 0, sizeof(KeyState));
+        memset(&m_inputFrames[-1 & InputBuffer::MASK].m_keyStateLow, 0, sizeof(KeyStateLow));
 }
 
 InputBuffer::~InputBuffer()
@@ -26,10 +26,10 @@ void InputBuffer::push_back(InputFrame inputFrame)
         switch (inputFrame.m_transitionState)
         {
                 case KeyTransition::Up:
-                        inputFrame.m_pressState.SetKeyUp(inputFrame.m_buttonSignature);
+                        inputFrame.SetKeyReleased(inputFrame.m_buttonSignature);
                         break;
                 case KeyTransition::Down:
-                        inputFrame.m_pressState.SetKeyDown(inputFrame.m_buttonSignature);
+                        inputFrame.SetKeyHeld(inputFrame.m_buttonSignature);
                         break;
         }
 
@@ -56,14 +56,14 @@ void InputBuffer::emplace_back(std::tuple<long, long> mouseDeltas,
 
         InputFrame&       inputFramesCurrent  = m_inputFrames[b & MASK];
         const InputFrame& inputFramesPrevious = m_inputFrames[(b - 1) & MASK];
-        inputFramesCurrent.m_pressState       = inputFramesPrevious.m_pressState;
+        inputFramesCurrent.m_keyStateLow      = inputFramesPrevious.m_keyStateLow;
         switch (transitionState)
         {
                 case KeyTransition::Up:
-                        inputFramesCurrent.m_pressState.SetKeyUp(buttonSignature);
+                        inputFramesCurrent.SetKeyReleased(buttonSignature);
                         break;
                 case KeyTransition::Down:
-                        inputFramesCurrent.m_pressState.SetKeyDown(buttonSignature);
+                        inputFramesCurrent.SetKeyHeld(buttonSignature);
                         break;
         }
         inputFramesCurrent.m_mouseDeltas     = mouseDeltas;
@@ -76,7 +76,7 @@ void InputBuffer::emplace_back(std::tuple<long, long> mouseDeltas,
         m_bottom++;
 }
 
-void InputBuffer::Signal()
+void InputBuffer::Signal() 
 {
         m_top                                   = m_currFrameBottom;
         const_cast<int64_t&>(m_currFrameBottom) = m_bottom;

@@ -22,6 +22,7 @@
 #include <type_traits>
 #include <vector>
 #include <functional>
+#include <immintrin.h>
 
 // directx12
 #include <DirectXMath.h>
@@ -45,3 +46,4 @@ using namespace Microsoft::WRL;
 #include <EntityAdmin.h>
 #include <MemoryDefines.h>
 #include <RawInput.Enums.h>
+#include <MM256FlagLUT.h>
