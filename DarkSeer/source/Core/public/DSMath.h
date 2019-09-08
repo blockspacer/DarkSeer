@@ -1,7 +1,7 @@
 #pragma once
 
-#include <type_traits>
 #include <numeric>
+#include <type_traits>
 inline namespace Math
 {
         inline unsigned Accumulate(const __m256i* const buffer, unsigned sz)
@@ -17,16 +17,16 @@ inline namespace Math
         template <typename IntegerType>
         inline constexpr
             typename std::enable_if<!std::is_floating_point<IntegerType>::value && !std::is_signed<IntegerType>::value,
-                                          IntegerType>::type
-        DivideRoundUpU(IntegerType dividend, IntegerType divisor)
+                                    IntegerType>::type
+            DivideRoundUpU(IntegerType dividend, IntegerType divisor)
         {
                 return 1 + ((dividend - 1) / divisor);
         }
         template <typename IntegerType>
         inline constexpr
             typename std::enable_if<!std::is_floating_point<IntegerType>::value && std::is_signed<IntegerType>::value,
-                                          IntegerType>::type
-        DivideRoundUpI(IntegerType dividend, IntegerType divisor)
+                                    IntegerType>::type
+            DivideRoundUpI(IntegerType dividend, IntegerType divisor)
         {
                 if ((dividend < 0) ^ (divisor < 0))
                 {
@@ -80,4 +80,97 @@ constexpr std::tuple<Ts...>& operator+=(std::tuple<Ts...>& lhs, const std::tuple
 {
         plusequalsimpl(lhs, rhs, std::make_index_sequence<sizeof...(Ts)>{});
         return lhs;
+}
+
+
+template <typename... Ts, unsigned I>
+constexpr std::tuple<Ts...> plusimpl(std::tuple<Ts...>&       output,
+                                     const std::tuple<Ts...>& lhs,
+                                     const std::tuple<Ts...>& rhs,
+                                     std::index_sequence<I>)
+{
+        const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
+            std::get<I>(lhs) + std::get<I>(rhs);
+        // std::get<I>(lhs) += std::get<I>(rhs);
+        return output;
+}
+template <typename... Ts, unsigned I, unsigned... Is>
+constexpr typename std::enable_if<sizeof...(Is), std::tuple<Ts...>>::type plusimpl(std::tuple<Ts...>&       output,
+                                                                                   const std::tuple<Ts...>& lhs,
+                                                                                   const std::tuple<Ts...>& rhs,
+                                                                                   std::index_sequence<I, Is...>)
+{
+        const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
+            std::get<I>(lhs) + std::get<I>(rhs);
+        plusimpl(output, lhs, rhs, std::index_sequence<Is...>{});
+        return output;
+}
+template <typename... Ts>
+constexpr std::tuple<Ts...> operator+(const std::tuple<Ts...>& lhs, const std::tuple<Ts...>& rhs)
+{
+        std::tuple<Ts...> output;
+        plusimpl(output, lhs, rhs, std::make_index_sequence<sizeof...(Ts)>{});
+        return output;
+}
+
+
+template <typename... Ts, unsigned I>
+constexpr std::tuple<Ts...> multiplyimpl(std::tuple<Ts...>&       output,
+                                     const std::tuple<Ts...>& lhs,
+                                     const std::tuple<Ts...>& rhs,
+                                     std::index_sequence<I>)
+{
+        const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
+            std::get<I>(lhs) * std::get<I>(rhs);
+        // std::get<I>(lhs) += std::get<I>(rhs);
+        return output;
+}
+template <typename... Ts, unsigned I, unsigned... Is>
+constexpr typename std::enable_if<sizeof...(Is), std::tuple<Ts...>>::type multiplyimpl(std::tuple<Ts...>&       output,
+                                                                                   const std::tuple<Ts...>& lhs,
+                                                                                   const std::tuple<Ts...>& rhs,
+                                                                                   std::index_sequence<I, Is...>)
+{
+        const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
+            std::get<I>(lhs) * std::get<I>(rhs);
+        multiplyimpl(output, lhs, rhs, std::index_sequence<Is...>{});
+        return output;
+}
+template <typename... Ts>
+constexpr std::tuple<Ts...> operator*(const std::tuple<Ts...>& lhs, const std::tuple<Ts...>& rhs)
+{
+        std::tuple<Ts...> output;
+        multiplyimpl(output, lhs, rhs, std::make_index_sequence<sizeof...(Ts)>{});
+        return output;
+}
+
+
+template <typename... Ts, unsigned I>
+constexpr std::tuple<Ts...> subimpl(std::tuple<Ts...>&       output,
+                                         const std::tuple<Ts...>& lhs,
+                                         const std::tuple<Ts...>& rhs,
+                                         std::index_sequence<I>)
+{
+        const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
+            std::get<I>(lhs) - std::get<I>(rhs);
+        // std::get<I>(lhs) += std::get<I>(rhs);
+        return output;
+}
+template <typename... Ts, unsigned I, unsigned... Is>
+constexpr typename std::enable_if<sizeof...(Is), std::tuple<Ts...>>::type subimpl(std::tuple<Ts...>&       output,
+                                                                                       const std::tuple<Ts...>& lhs,
+                                                                                       const std::tuple<Ts...>& rhs,
+                                                                                       std::index_sequence<I, Is...>)
+{
+        const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
+            std::get<I>(lhs) - std::get<I>(rhs);
+        subimpl(output, lhs, rhs, std::index_sequence<Is...>{});
+        return output;
+}
+template <typename... Ts>
+constexpr std::tuple<Ts...> operator-(const std::tuple<Ts...>& lhs, const std::tuple<Ts...>& rhs)
+{
+        std::tuple<Ts...> output;
+        subimpl(output, lhs, rhs, std::make_index_sequence<sizeof...(Ts)>{});
+        return output;
 }

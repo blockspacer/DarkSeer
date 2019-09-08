@@ -15,6 +15,8 @@ void InputSystem::PreUpdate(EntityAdmin* entityAdmin)
 
         for (auto& itr : *singlInputBuffer)
         {
+                auto [x, y] = itr->m_absoluteMousePos;
+                std::cout << "x:["<<x<<"],y:["<<y<<"]\n";
                 if (itr.IsKeySetBeginPress(_private_set))
                         std::cout << "HelloSIMD\n";
         }

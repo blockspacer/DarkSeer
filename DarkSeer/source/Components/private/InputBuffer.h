@@ -263,6 +263,10 @@ struct InputBuffer
         {
                 return m_inputFrames[m_bottom - 1 & MASK].m_keyState;
         }
+		inline std::tuple<long, long> GetPrevAbsMousePos() const
+		{
+                return m_inputFrames[m_bottom - 1 & MASK].m_absoluteMousePos;
+		}
         //================================================================
         // captures the current m_top and m_bottom for use with consumer thread accessors (call once per input frame)
         void Signal();

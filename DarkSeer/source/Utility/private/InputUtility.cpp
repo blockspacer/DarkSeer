@@ -3,6 +3,8 @@
 #include <SingletonInput.h>
 #include <SingletonWindow.h>
 
+
+#include <DSMath.h>
 namespace InputUtil
 {
         LRESULT CALLBACK InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam);
@@ -73,20 +75,21 @@ namespace InputUtil
                                         {
                                                 tempInputFrame.m_mouseDeltas = std::tuple{rawInputFrame.data.mouse.lLastX,
                                                                                           rawInputFrame.data.mouse.lLastY};
+                                                POINT point;
+                                                GetCursorPos(&point);
+                                                std::get<0>(tempInputFrame.m_absoluteMousePos) = point.x;
+                                                std::get<1>(tempInputFrame.m_absoluteMousePos) = point.y;
                                                 singlInputBuffer->push_back(tempInputFrame);
                                         }
                                         // absolute mouse movment
-                                        else if (rawInputFrame.data.mouse.usFlags & MOUSE_VIRTUAL_DESKTOP)
+                                        else
                                         {
-                                                const int width  = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-                                                const int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-
-                                                int x = static_cast<int>((float(rawInputFrame.data.mouse.lLastX) / 65535.0f) *
-                                                                         width);
-                                                int y = static_cast<int>((float(rawInputFrame.data.mouse.lLastY) / 65535.0f) *
-                                                                         height);
-
-                                                tempInputFrame.m_mouseDeltas = std::tuple{x, y};
+                                                POINT point;
+                                                GetCursorPos(&point);
+                                                std::get<0>(tempInputFrame.m_absoluteMousePos) = point.x;
+                                                std::get<1>(tempInputFrame.m_absoluteMousePos) = point.y;
+                                                tempInputFrame.m_mouseDeltas =
+                                                    tempInputFrame.m_absoluteMousePos - singlInputBuffer->GetPrevAbsMousePos();
                                                 singlInputBuffer->push_back(tempInputFrame);
                                         }
                                 }
