@@ -14,7 +14,7 @@ void InputSystem::PreUpdate(EntityAdmin* entityAdmin)
         {
                 if (itr.IsKeyPressFrame(KeyCode::ControlRight))
                         std::cout << "C\n";
-                if (itr->IsKeyCodeSetHeld(KeyCodeSet({KeyCode::A, KeyCode::ShiftLeft, KeyCode::S})))
+                if (itr.IsKeySetBeginPress(KeyCodeSet({KeyCode::A, KeyCode::ShiftLeft, KeyCode::S})))
                         std::cout << "HelloSIMD\n";
                 if (itr.IsKeyHeld(KeyCode::A))
                         std::cout << "A[][]";

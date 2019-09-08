@@ -56,20 +56,18 @@ struct alignas(CACHE_LINE) InputFrame
                 reinterpret_cast<__m256i&>(m_keyStateLow) =
                     _mm256_andnot_si256(MM256FlagsLUT[to_underlying_type(keyCode)], reinterpret_cast<__m256i&>(m_keyStateLow));
         }
-
-        inline bool IsKeyCodeSetHeld(KeyCodeSet keyCodeSet) const
+        inline bool IsKeySetHeld(KeyCodeSet keyCodeSet) const
         {
                 return IsKeyCodeHeldInternal(keyCodeSet.m_keyCodeSetInternal);
         }
-
         inline bool IsKeyHeld(KeyCode keyCode) const
         {
                 return IsKeyCodeHeldInternal(MM256FlagsLUT[to_underlying_type(keyCode)]);
         }
 
     private:
-		inline bool IsKeyCodeHeldInternal(__m256i query) const
-		{
+        inline bool IsKeyCodeHeldInternal(__m256i query) const
+        {
                 // bitwise and all 256 bits in parallel
                 auto masked = _mm256_and_si256(query, reinterpret_cast<const __m256i&>(m_keyStateLow));
                 // piecewise compare the 256 bits in 64 bit chunks
@@ -77,7 +75,7 @@ struct alignas(CACHE_LINE) InputFrame
                 // check if all 64 bit chunks resulted in true
                 auto result = _mm256_testc_si256(compared, _mm256_set1_epi8('\xff'));
                 return static_cast<bool>(result);
-		}
+        }
 };
 
 struct InputBuffer
@@ -98,6 +96,10 @@ struct InputBuffer
                 {}
                 inline iterator(const iterator& other) : m_owner(other.m_owner), m_currIndex(other.m_currIndex)
                 {}
+                inline const InputFrame& previous() const
+                {
+                        return m_owner.m_inputFrames[m_currIndex - 1];
+                }
 
             public:
                 // prefix
@@ -177,9 +179,12 @@ struct InputBuffer
 
                 inline bool IsKeyBeginPressFrame(KeyCode keyCode) const
                 {
-                        return m_owner.m_inputFrames[m_currIndex].IsKeyPressFrame(keyCode) &&
-                               !m_owner.m_inputFrames[m_currIndex - 1].IsKeyHeld(keyCode);
+                        return (**this).IsKeyPressFrame(keyCode) && !previous().IsKeyHeld(keyCode);
                 }
+				inline bool IsKeySetBeginPress(KeyCodeSet keyCodeSet) const
+				{
+                        return (**this).IsKeySetHeld(keyCodeSet) && !previous().IsKeySetHeld(keyCodeSet);
+				}
                 inline bool IsKeyPressFrame(KeyCode keyCode) const
                 {
                         return (**this).IsKeyPressFrame(keyCode);
@@ -191,6 +196,10 @@ struct InputBuffer
                 inline bool IsKeyHeld(KeyCode keyCode) const
                 {
                         return (**this).IsKeyHeld(keyCode);
+                }
+                inline bool IsKeySetHeld(KeyCodeSet keyCodeSet) const
+                {
+                        return (**this).IsKeySetHeld(keyCodeSet);
                 }
                 inline bool IsKeyReleased(KeyCode keyCode) const
                 {
