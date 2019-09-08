@@ -12,7 +12,7 @@ InputBuffer::InputBuffer() : m_currFrameBottom(0), m_currFrameTop(0)
         m_top    = 0;
         // set previous press state to 0 for all buttons
 #pragma warning(suppress : 6385)
-        memset(&m_inputFrames[-1 & InputBuffer::MASK].m_keyStateLow, 0, sizeof(KeyStateLow));
+        memset(&m_inputFrames[-1 & InputBuffer::MASK].m_keyState, 0, sizeof(KeyStateLow));
 }
 
 InputBuffer::~InputBuffer()
@@ -56,7 +56,7 @@ void InputBuffer::emplace_back(std::tuple<long, long> mouseDeltas,
 
         InputFrame&       inputFramesCurrent  = m_inputFrames[b & MASK];
         const InputFrame& inputFramesPrevious = m_inputFrames[(b - 1) & MASK];
-        inputFramesCurrent.m_keyStateLow      = inputFramesPrevious.m_keyStateLow;
+        inputFramesCurrent.m_keyState      = inputFramesPrevious.m_keyState;
         switch (transitionState)
         {
                 case KeyTransition::Up:

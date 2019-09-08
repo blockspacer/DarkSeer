@@ -43,8 +43,7 @@ namespace InputUtil
                 memset(&tempInputFrame, 0, sizeof(InputFrame));
 
 				auto singlInputBuffer = g_userEntityAdmin.GetSingletonInput()->GetInputBuffer();
-                tempInputFrame.m_keyStateLow = singlInputBuffer->back().m_keyStateLow;
-                tempInputFrame.m_keyStateHigh = singlInputBuffer->back().m_keyStateHigh;
+                tempInputFrame.m_keyState = singlInputBuffer->GetPrevFrameState();
 
                 switch (message)
                 {
@@ -189,7 +188,7 @@ namespace InputUtil
                         case WM_KILLFOCUS:
                         {
                                 // set all press states to released
-                                memset(&tempInputFrame.m_keyStateLow, 0, sizeof(tempInputFrame.m_keyStateLow));
+                                memset(&tempInputFrame.m_keyState, 0, sizeof(tempInputFrame.m_keyState));
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
                         }

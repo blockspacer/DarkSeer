@@ -31,28 +31,28 @@ struct ActivatedKeyCodeSet : public KeyCodeSet
 
 struct alignas(CACHE_LINE) InputFrame
 {
-        InputFrame() :
-            m_keyStateHigh(),
-            m_keyStateLow(),
-            m_mouseDeltas(),
-            m_buttonSignature(),
-            m_scrollDelta(),
-            m_transitionState(),
-            m_padding()
-        {}
+        KeyStateLow            m_keyState;      //				32	B
+        std::tuple<long, long> m_absoluteMousePos; //				8	B
+        std::tuple<long, long> m_mouseDeltas;      //				8	B
+        KeyCode                m_buttonSignature;  // buttonId //	2	B
+        int16_t                m_scrollDelta;      //				2	B
+        KeyTransition          m_transitionState;  // up or down //	1	B
 
-        KeyStateLow            m_keyStateLow;     //				32	B
-        KeyStateHigh           m_keyStateHigh;    //				16	B
-        std::tuple<long, long> m_mouseDeltas;     //				8	B
-        KeyCode                m_buttonSignature; // buttonId //	2	B
-        int16_t                m_scrollDelta;     //				2	B
-        KeyTransition          m_transitionState; // up or down //	1	B
-
-        static constexpr auto DATA_SIZE = sizeof(m_keyStateLow) + sizeof(m_keyStateHigh) + sizeof(m_mouseDeltas) +
+        static constexpr auto DATA_SIZE = sizeof(m_keyState) + sizeof(m_absoluteMousePos) + sizeof(m_mouseDeltas) +
                                           sizeof(m_buttonSignature) + sizeof(m_scrollDelta) + sizeof(m_transitionState);
         static_assert(DATA_SIZE <= CACHE_LINE);
         std::enable_if<DATA_SIZE - CACHE_LINE != 0, char>::type m_padding[CACHE_LINE - DATA_SIZE];
 
+        inline void SetKeyHeld(KeyCode keyCode)
+        {
+                reinterpret_cast<__m256i&>(m_keyState) =
+                    _mm256_or_si256(reinterpret_cast<__m256i&>(m_keyState), MM256FlagsLUT[to_underlying_type(keyCode)]);
+        }
+        inline void SetKeyReleased(KeyCode keyCode)
+        {
+                reinterpret_cast<__m256i&>(m_keyState) =
+                    _mm256_andnot_si256(MM256FlagsLUT[to_underlying_type(keyCode)], reinterpret_cast<__m256i&>(m_keyState));
+        }
         inline bool IsKeyPressFrame(KeyCode keyCode) const
         {
                 return m_buttonSignature == keyCode && m_transitionState == KeyTransition::Down;
@@ -60,16 +60,6 @@ struct alignas(CACHE_LINE) InputFrame
         inline bool IsKeyReleaseFrame(KeyCode keyCode) const
         {
                 return m_buttonSignature == keyCode && m_transitionState == KeyTransition::Up;
-        }
-        inline void SetKeyHeld(KeyCode keyCode)
-        {
-                reinterpret_cast<__m256i&>(m_keyStateLow) =
-                    _mm256_or_si256(reinterpret_cast<__m256i&>(m_keyStateLow), MM256FlagsLUT[to_underlying_type(keyCode)]);
-        }
-        inline void SetKeyReleased(KeyCode keyCode)
-        {
-                reinterpret_cast<__m256i&>(m_keyStateLow) =
-                    _mm256_andnot_si256(MM256FlagsLUT[to_underlying_type(keyCode)], reinterpret_cast<__m256i&>(m_keyStateLow));
         }
         inline bool IsKeySetHeld(KeyCodeSet keyCodeSet) const
         {
@@ -84,15 +74,14 @@ struct alignas(CACHE_LINE) InputFrame
         inline bool IsKeyCodeHeldInternal(__m256i query) const
         {
                 // bitwise and all 256 bits in parallel
-                auto masked = _mm256_and_si256(query, reinterpret_cast<const __m256i&>(m_keyStateLow));
+                auto masked = _mm256_and_si256(query, reinterpret_cast<const __m256i&>(m_keyState));
                 // piecewise compare the 256 bits in 64 bit chunks
                 auto compared = _mm256_cmpeq_epi64(masked, query);
                 // check if all 64 bit chunks resulted in true
-                auto result = _mm256_testc_si256(compared, _mm256_set1_epi8('\xff'));
-                return static_cast<bool>(result);
+                return static_cast<bool>(_mm256_extract_epi8(compared, 0));
         }
 };
-
+constexpr auto SizeofInputFrame = sizeof(InputFrame);
 //================================================================
 // Multithreaded Circular Buffer (Single Producer - Single Consumer)
 struct InputBuffer
@@ -214,7 +203,7 @@ struct InputBuffer
                 {
                         return &this_input_frame();
                 }
-                inline bool IsKeyBeginPressFrame(KeyCode keyCode) const
+                inline bool IsKeyPressFrameBegin(KeyCode keyCode) const
                 {
                         return this_input_frame().IsKeyPressFrame(keyCode) && !previous_input_frame().IsKeyHeld(keyCode);
                 }
@@ -260,14 +249,18 @@ struct InputBuffer
         const int64_t m_currFrameTop;
         //================================================================
         // producer thread mutators/accessors
-        void                     push_back(InputFrame inputFrame);
-        void                     emplace_back(std::tuple<long, long> mouseDeltas,
-                                              KeyCode                buttonSignature,
-                                              int16_t                scrollDelta,
-                                              KeyTransition          transitionState);
-        inline const InputFrame& back() const
+        void push_back(InputFrame inputFrame);
+        void emplace_back(std::tuple<long, long> mouseDeltas,
+                          KeyCode                buttonSignature,
+                          int16_t                scrollDelta,
+                          KeyTransition          transitionState);
+        // inline const InputFrame& back() const
+        //{
+        //        return m_inputFrames[m_bottom - 1 & MASK];
+        //}
+        inline KeyStateLow GetPrevFrameState() const
         {
-                return m_inputFrames[m_bottom - 1 & MASK];
+                return m_inputFrames[m_bottom - 1 & MASK].m_keyState;
         }
         //================================================================
         // captures the current m_top and m_bottom for use with consumer thread accessors (call once per input frame)
