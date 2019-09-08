@@ -36,7 +36,7 @@ inline namespace Enums
         //    to_underlying_type(KeyCode::COUNT) - INPUT_NUM_MOUSE_SCANCODES;
         constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODES = to_underlying_type(KeyCode::COUNT) / 3;
 #define ENUM(E, V) #E,
-        constexpr const char* buttonSignatureToString[to_underlying_type(KeyCode::COUNT) + 1]{
+        constexpr const char* keyCodeToString[to_underlying_type(KeyCode::COUNT) + 1]{
 #include <SCANCODES64_1.ENUM>
 #include <SCANCODES64_2.ENUM>
 #include <SCANCODES64_3.ENUM>
@@ -68,8 +68,13 @@ inline namespace Enums
                 Up
         };
         constexpr const char* transitionStateToString[2]{"Down", "Up"};
+
         inline static constexpr const char* TransitionStateToString(KeyTransition keyTransition)
         {
                 return transitionStateToString[to_underlying_type(keyTransition)];
         }
+		inline static constexpr const char* KeyCodeToString(KeyCode keyCode)
+		{
+                return keyCodeToString[to_underlying_type(keyCode)];
+		}
 } // namespace Enums

@@ -179,3 +179,7 @@ inline constexpr static POINT operator-(POINT lhs, POINT rhs)
 {
         return {lhs.x - rhs.x, lhs.y - rhs.y};
 }
+inline constexpr static bool operator!(POINT lhs)
+{
+        return !lhs.x && !lhs.y;
+}

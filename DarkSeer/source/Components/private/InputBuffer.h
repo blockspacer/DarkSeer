@@ -82,7 +82,11 @@ struct alignas(CACHE_LINE) InputFrame
                 return static_cast<bool>(_mm256_testc_si256(compared, _mm256_set1_epi8('\xff')));
         }
 };
-constexpr auto SizeofInputFrame = sizeof(InputFrame);
+constexpr auto     SizeofInputFrame = sizeof(InputFrame);
+static inline bool operator!(InputFrame lhs)
+{
+        return !lhs.m_keyCode && !lhs.m_mouseDeltas && !lhs.m_scrollDelta;
+}
 //================================================================
 // Multithreaded Circular Buffer (Single Producer - Single Consumer)
 struct InputBuffer
@@ -236,6 +240,29 @@ struct InputBuffer
                 inline bool IsKeySetHeld(KeyCodeSet keyCodeSet) const
                 {
                         return this_input_frame().IsKeySetHeld(keyCodeSet);
+                }
+                inline bool IsKeyCodeFrame() const
+                {
+                        auto& _this_frame = this_input_frame();
+                        return _this_frame.m_keyCode != KeyCode::Null;
+                }
+                inline bool IsMouseMoveFrame() const
+                {
+                        auto& _this_frame = this_input_frame();
+                        return _this_frame.m_mouseDeltas.x || _this_frame.m_mouseDeltas.y;
+                }
+                inline bool IsScrollFrame() const
+                {
+                        auto& _this_frame = this_input_frame();
+                        return _this_frame.m_keyCode == KeyCode::mouseScrollVertical ||
+                               _this_frame.m_keyCode == KeyCode::mouseScrollHorizontal;
+                }
+                inline bool IsEmptyFrame() const
+                {
+                        auto& _this_frame = this_input_frame();
+
+                        return _this_frame.m_keyCode == KeyCode::Null &&
+                               (!_this_frame.m_mouseDeltas.x || !_this_frame.m_mouseDeltas.y);
                 }
         };
         //================================================================

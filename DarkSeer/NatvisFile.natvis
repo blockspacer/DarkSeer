@@ -31,9 +31,16 @@
       <Item Name="KeyCode" Condition="!m_keyCode == false">
         m_keyCode
       </Item>
-      <Item Name="KeyCode" Condition="!m_keyCode == false">
+      <Item Name="TransitionState" Condition="!m_keyCode == false">
         m_transitionState
       </Item>
+    </Expand>
+  </Type>
+  <Type Name="InputBuffer::iterator_proxy">
+    <Expand>
+      <ExpandedItem>
+        m_owner.m_inputFrames[InputBuffer::MASK &amp; m_currIndex]
+      </ExpandedItem>
     </Expand>
   </Type>
 </AutoVisualizer>
