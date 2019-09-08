@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="InputBuffer">
+    <DisplayString>
+      {{size = {m_bottom - m_top}}}
+    </DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>m_bottom - m_top</Size>
+        <ValuePointer>m_inputFrames + (m_top &amp; MASK)</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  <Type Name="InputFrame">
+    <DisplayString Condition="(m_mouseDeltas.x != 0) || (m_mouseDeltas.y != 0)">
+      {{MouseMove   x:{m_mouseDeltas.x }  y:{m_mouseDeltas.y}}}
+    </DisplayString>
+    <DisplayString Condition="(!m_keyCode == false) &amp;&amp; (m_mouseDeltas.x != 0) || (m_mouseDeltas.y != 0)">
+      {{MouseMove  {m_keyCode}:{m_transitionState}}}
+    </DisplayString>
+    <DisplayString Condition="(!m_keyCode == false)">
+      {{{m_keyCode}   {m_transitionState}}}
+    </DisplayString>
+    <DisplayString Condition="!m_keyCode &amp;&amp; !(m_mouseDeltas.x != 0) || (m_mouseDeltas.y != 0)">
+      {{Null}}
+    </DisplayString>
+    <Expand>
+      <ExpandedItem Condition="(m_mouseDeltas.x != 0) || (m_mouseDeltas.y != 0)">
+        m_mouseDeltas
+      </ExpandedItem>
+      <Item Name="KeyCode" Condition="!m_keyCode == false">
+        m_keyCode
+      </Item>
+      <Item Name="KeyCode" Condition="!m_keyCode == false">
+        m_transitionState
+      </Item>
+    </Expand>
+  </Type>
+</AutoVisualizer>

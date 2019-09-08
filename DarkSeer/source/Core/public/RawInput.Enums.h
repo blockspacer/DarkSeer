@@ -22,11 +22,19 @@ inline namespace Enums
 #include <SCANCODES64_6.ENUM>
                 COUNT
         };
+        static bool operator!(KeyCode lhs)
+        {
+                return lhs == KeyCode::Null;
+        }
+        static bool operator==(KeyCode lhs, bool rhs)
+        {
+                return static_cast<bool>(to_underlying_type(lhs)) == rhs;
+        }
 #undef ENUM
         // constexpr uint8_t  INPUT_NUM_MOUSE_SCANCODES = to_underlying_type(DummyMouseCodesEnum::COUNT);
         // constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODE_SIGNATURES =
         //    to_underlying_type(KeyCode::COUNT) - INPUT_NUM_MOUSE_SCANCODES;
-        constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODES = to_underlying_type(KeyCode::COUNT)/3;
+        constexpr uint16_t INPUT_NUM_KEYBOARD_SCANCODES = to_underlying_type(KeyCode::COUNT) / 3;
 #define ENUM(E, V) #E,
         constexpr const char* buttonSignatureToString[to_underlying_type(KeyCode::COUNT) + 1]{
 #include <SCANCODES64_1.ENUM>
@@ -60,4 +68,8 @@ inline namespace Enums
                 Up
         };
         constexpr const char* transitionStateToString[2]{"Down", "Up"};
+        inline static constexpr const char* TransitionStateToString(KeyTransition keyTransition)
+        {
+                return transitionStateToString[to_underlying_type(keyTransition)];
+        }
 } // namespace Enums

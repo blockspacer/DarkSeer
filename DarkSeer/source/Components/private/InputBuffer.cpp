@@ -26,10 +26,10 @@ void InputBuffer::push_back(InputFrame inputFrame)
         switch (inputFrame.m_transitionState)
         {
                 case KeyTransition::Up:
-                        inputFrame.SetKeyReleased(inputFrame.m_buttonSignature);
+                        inputFrame.SetKeyReleased(inputFrame.m_keyCode);
                         break;
                 case KeyTransition::Down:
-                        inputFrame.SetKeyHeld(inputFrame.m_buttonSignature);
+                        inputFrame.SetKeyHeld(inputFrame.m_keyCode);
                         break;
         }
 
@@ -45,7 +45,7 @@ void InputBuffer::push_back(InputFrame inputFrame)
         m_bottom++;
 }
 
-void InputBuffer::emplace_back(std::tuple<long, long> mouseDeltas,
+void InputBuffer::emplace_back(POINT mouseDeltas,
                                KeyCode                buttonSignature,
                                int16_t                scrollDelta,
                                KeyTransition          transitionState)
@@ -67,7 +67,7 @@ void InputBuffer::emplace_back(std::tuple<long, long> mouseDeltas,
                         break;
         }
         inputFramesCurrent.m_mouseDeltas     = mouseDeltas;
-        inputFramesCurrent.m_buttonSignature = buttonSignature;
+        inputFramesCurrent.m_keyCode = buttonSignature;
         inputFramesCurrent.m_scrollDelta     = scrollDelta;
         inputFramesCurrent.m_transitionState = transitionState;
         // ensure the inputFrame is written before b+1 is published to other threads.

@@ -9,12 +9,16 @@ namespace InputUtil
 {
         LRESULT CALLBACK InputWndProc(_In_ HWND hwnd, _In_ UINT message, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
-		void InitializeInputWndProc(SingletonInput* singlInput, const SingletonWindow* singlWindow)
+        void InitializeInputWndProc(SingletonInput* singlInput, const SingletonWindow* singlWindow)
         {
                 // add input capture window proc to the window handle's previous window proc
+                singlInput->m_parentWndProc = 0;
                 singlInput->m_parentWndProc =
                     (WNDPROC)SetWindowLongPtrA(singlWindow->m_mainHwnd, GWLP_WNDPROC, (LONG_PTR)InputUtil::InputWndProc);
-                SetWindowPos(singlWindow->m_mainHwnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+                if (!singlInput->m_parentWndProc)
+                                throw(std::exception("failed to set input window procedure"));
+
+               SetWindowPos(singlWindow->m_mainHwnd, 0, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
         }
 
         void RegisterDefaultRawInputDevices()
@@ -33,10 +37,8 @@ namespace InputUtil
                 // RIDEV_NOLEGACY; // adds HID keyboard and also ignores legacy keyboard messages
                 Rid[1].hwndTarget = 0;
 
-                if (RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])) == FALSE)
-                {
-                        std::exception();
-                }
+                if (!RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])))
+                        throw(std::exception("failed to register default raw input devices"));
         }
 
         LRESULT InputWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -44,8 +46,9 @@ namespace InputUtil
                 InputFrame tempInputFrame;
                 memset(&tempInputFrame, 0, sizeof(InputFrame));
 
-				auto singlInputBuffer = g_userEntityAdmin.GetSingletonInput()->GetInputBuffer();
+                auto singlInputBuffer     = g_userEntityAdmin.GetSingletonInput()->GetInputBuffer();
                 tempInputFrame.m_keyState = singlInputBuffer->GetPrevFrameState();
+                GetCursorPos(&tempInputFrame.m_absoluteMousePos);
 
                 switch (message)
                 {
@@ -61,7 +64,7 @@ namespace InputUtil
                                         uint16_t      button_signature_flag = rawInputFrame.data.keyboard.Flags >> 1;
                                         KeyTransition transition_state =
                                             static_cast<KeyTransition>(rawInputFrame.data.keyboard.Flags & 1);
-                                        tempInputFrame.m_buttonSignature =
+                                        tempInputFrame.m_keyCode =
                                             static_cast<KeyCode>(rawInputFrame.data.keyboard.MakeCode +
                                                                  button_signature_flag * INPUT_NUM_KEYBOARD_SCANCODES);
                                         tempInputFrame.m_transitionState = transition_state;
@@ -73,23 +76,16 @@ namespace InputUtil
                                         // relative mouse movement
                                         if (!(rawInputFrame.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE))
                                         {
-                                                tempInputFrame.m_mouseDeltas = std::tuple{rawInputFrame.data.mouse.lLastX,
-                                                                                          rawInputFrame.data.mouse.lLastY};
-                                                POINT point;
-                                                GetCursorPos(&point);
-                                                std::get<0>(tempInputFrame.m_absoluteMousePos) = point.x;
-                                                std::get<1>(tempInputFrame.m_absoluteMousePos) = point.y;
+                                                tempInputFrame.m_mouseDeltas = {rawInputFrame.data.mouse.lLastX,
+                                                                                rawInputFrame.data.mouse.lLastY};
                                                 singlInputBuffer->push_back(tempInputFrame);
                                         }
                                         // absolute mouse movment
                                         else
                                         {
-                                                POINT point;
-                                                GetCursorPos(&point);
-                                                std::get<0>(tempInputFrame.m_absoluteMousePos) = point.x;
-                                                std::get<1>(tempInputFrame.m_absoluteMousePos) = point.y;
-                                                tempInputFrame.m_mouseDeltas =
-                                                    tempInputFrame.m_absoluteMousePos - singlInputBuffer->GetPrevAbsMousePos();
+                                                rawInputFrame.data.mouse.lLastX;
+                                                rawInputFrame.data.mouse.lLastY;
+                                                tempInputFrame.m_absoluteMousePos - singlInputBuffer->GetPrevAbsMousePos();
                                                 singlInputBuffer->push_back(tempInputFrame);
                                         }
                                 }
@@ -97,53 +93,53 @@ namespace InputUtil
                         }
                         case WM_LBUTTONDOWN:
                         {
-                                tempInputFrame.m_buttonSignature = KeyCode::mouseLeft;
+                                tempInputFrame.m_keyCode = KeyCode::mouseLeft;
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
                         }
                         case WM_LBUTTONUP:
                         {
-                                tempInputFrame.m_buttonSignature = KeyCode::mouseLeft;
+                                tempInputFrame.m_keyCode = KeyCode::mouseLeft;
                                 tempInputFrame.m_transitionState = KeyTransition::Up;
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
                         }
                         case WM_RBUTTONDOWN:
                         {
-                                tempInputFrame.m_buttonSignature = KeyCode::mouseRight;
+                                tempInputFrame.m_keyCode = KeyCode::mouseRight;
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
                         }
                         case WM_RBUTTONUP:
                         {
-                                tempInputFrame.m_buttonSignature = KeyCode::mouseRight;
+                                tempInputFrame.m_keyCode = KeyCode::mouseRight;
                                 tempInputFrame.m_transitionState = KeyTransition::Up;
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
                         }
                         case WM_MBUTTONDOWN:
                         {
-                                tempInputFrame.m_buttonSignature = KeyCode::mouseMiddle;
+                                tempInputFrame.m_keyCode = KeyCode::mouseMiddle;
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
                         }
                         case WM_MBUTTONUP:
                         {
-                                tempInputFrame.m_buttonSignature = KeyCode::mouseMiddle;
+                                tempInputFrame.m_keyCode = KeyCode::mouseMiddle;
                                 tempInputFrame.m_transitionState = KeyTransition::Up;
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
                         }
                         case WM_MOUSEWHEEL:
                         {
-                                tempInputFrame.m_buttonSignature = KeyCode::mouseScrollVertical;
+                                tempInputFrame.m_keyCode = KeyCode::mouseScrollVertical;
                                 tempInputFrame.m_scrollDelta     = GET_WHEEL_DELTA_WPARAM(wParam);
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
                         }
                         case WM_MOUSEHWHEEL:
                         {
-                                tempInputFrame.m_buttonSignature = KeyCode::mouseScrollHorizontal;
+                                tempInputFrame.m_keyCode = KeyCode::mouseScrollHorizontal;
                                 tempInputFrame.m_scrollDelta     = GET_WHEEL_DELTA_WPARAM(wParam);
                                 singlInputBuffer->push_back(tempInputFrame);
                                 break;
@@ -154,13 +150,13 @@ namespace InputUtil
                                 {
                                         case XBUTTON1:
                                         {
-                                                tempInputFrame.m_buttonSignature = KeyCode::mouseForward;
+                                                tempInputFrame.m_keyCode = KeyCode::mouseForward;
                                                 singlInputBuffer->push_back(tempInputFrame);
                                                 break;
                                         }
                                         case XBUTTON2:
                                         {
-                                                tempInputFrame.m_buttonSignature = KeyCode::mouseBack;
+                                                tempInputFrame.m_keyCode = KeyCode::mouseBack;
                                                 singlInputBuffer->push_back(tempInputFrame);
                                                 break;
                                         }
@@ -173,14 +169,14 @@ namespace InputUtil
                                 {
                                         case XBUTTON1:
                                         {
-                                                tempInputFrame.m_buttonSignature = KeyCode::mouseForward;
+                                                tempInputFrame.m_keyCode = KeyCode::mouseForward;
                                                 tempInputFrame.m_transitionState = KeyTransition::Up;
                                                 singlInputBuffer->push_back(tempInputFrame);
                                                 break;
                                         }
                                         case XBUTTON2:
                                         {
-                                                tempInputFrame.m_buttonSignature = KeyCode::mouseBack;
+                                                tempInputFrame.m_keyCode = KeyCode::mouseBack;
                                                 tempInputFrame.m_transitionState = KeyTransition::Up;
                                                 singlInputBuffer->push_back(tempInputFrame);
                                                 break;
@@ -204,4 +200,3 @@ namespace InputUtil
                                        lParam);
         }
 } // namespace InputUtil
-

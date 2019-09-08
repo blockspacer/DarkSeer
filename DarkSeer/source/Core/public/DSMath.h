@@ -116,9 +116,9 @@ constexpr std::tuple<Ts...> operator+(const std::tuple<Ts...>& lhs, const std::t
 
 template <typename... Ts, unsigned I>
 constexpr std::tuple<Ts...> multiplyimpl(std::tuple<Ts...>&       output,
-                                     const std::tuple<Ts...>& lhs,
-                                     const std::tuple<Ts...>& rhs,
-                                     std::index_sequence<I>)
+                                         const std::tuple<Ts...>& lhs,
+                                         const std::tuple<Ts...>& rhs,
+                                         std::index_sequence<I>)
 {
         const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
             std::get<I>(lhs) * std::get<I>(rhs);
@@ -127,9 +127,9 @@ constexpr std::tuple<Ts...> multiplyimpl(std::tuple<Ts...>&       output,
 }
 template <typename... Ts, unsigned I, unsigned... Is>
 constexpr typename std::enable_if<sizeof...(Is), std::tuple<Ts...>>::type multiplyimpl(std::tuple<Ts...>&       output,
-                                                                                   const std::tuple<Ts...>& lhs,
-                                                                                   const std::tuple<Ts...>& rhs,
-                                                                                   std::index_sequence<I, Is...>)
+                                                                                       const std::tuple<Ts...>& lhs,
+                                                                                       const std::tuple<Ts...>& rhs,
+                                                                                       std::index_sequence<I, Is...>)
 {
         const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
             std::get<I>(lhs) * std::get<I>(rhs);
@@ -147,9 +147,9 @@ constexpr std::tuple<Ts...> operator*(const std::tuple<Ts...>& lhs, const std::t
 
 template <typename... Ts, unsigned I>
 constexpr std::tuple<Ts...> subimpl(std::tuple<Ts...>&       output,
-                                         const std::tuple<Ts...>& lhs,
-                                         const std::tuple<Ts...>& rhs,
-                                         std::index_sequence<I>)
+                                    const std::tuple<Ts...>& lhs,
+                                    const std::tuple<Ts...>& rhs,
+                                    std::index_sequence<I>)
 {
         const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
             std::get<I>(lhs) - std::get<I>(rhs);
@@ -158,9 +158,9 @@ constexpr std::tuple<Ts...> subimpl(std::tuple<Ts...>&       output,
 }
 template <typename... Ts, unsigned I, unsigned... Is>
 constexpr typename std::enable_if<sizeof...(Is), std::tuple<Ts...>>::type subimpl(std::tuple<Ts...>&       output,
-                                                                                       const std::tuple<Ts...>& lhs,
-                                                                                       const std::tuple<Ts...>& rhs,
-                                                                                       std::index_sequence<I, Is...>)
+                                                                                  const std::tuple<Ts...>& lhs,
+                                                                                  const std::tuple<Ts...>& rhs,
+                                                                                  std::index_sequence<I, Is...>)
 {
         const_cast<std::remove_const_t<decltype(std::get<I>(output))>>(std::get<I>(output)) =
             std::get<I>(lhs) - std::get<I>(rhs);
@@ -173,4 +173,9 @@ constexpr std::tuple<Ts...> operator-(const std::tuple<Ts...>& lhs, const std::t
         std::tuple<Ts...> output;
         subimpl(output, lhs, rhs, std::make_index_sequence<sizeof...(Ts)>{});
         return output;
+}
+
+inline constexpr static POINT operator-(POINT lhs, POINT rhs)
+{
+        return {lhs.x - rhs.x, lhs.y - rhs.y};
 }

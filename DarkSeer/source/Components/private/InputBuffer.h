@@ -31,15 +31,15 @@ struct ActivatedKeyCodeSet : public KeyCodeSet
 
 struct alignas(CACHE_LINE) InputFrame
 {
-        KeyStateLow            m_keyState;         //				32	B
-        std::tuple<long, long> m_absoluteMousePos; //				8	B
-        std::tuple<long, long> m_mouseDeltas;      //				8	B
-        KeyCode                m_buttonSignature;  // buttonId //	2	B
-        int16_t                m_scrollDelta;      //				2	B
-        KeyTransition          m_transitionState;  // up or down //	1	B
+        KeyStateLow   m_keyState;         //				32	B
+        POINT         m_absoluteMousePos; //				8	B
+        POINT         m_mouseDeltas;      //				8	B
+        KeyCode       m_keyCode;          // buttonId //	2	B
+        int16_t       m_scrollDelta;      //				2	B
+        KeyTransition m_transitionState;  // up or down //	1	B
 
         static constexpr auto DATA_SIZE = sizeof(m_keyState) + sizeof(m_absoluteMousePos) + sizeof(m_mouseDeltas) +
-                                          sizeof(m_buttonSignature) + sizeof(m_scrollDelta) + sizeof(m_transitionState);
+                                          sizeof(m_keyCode) + sizeof(m_scrollDelta) + sizeof(m_transitionState);
         static_assert(DATA_SIZE <= CACHE_LINE);
         std::enable_if<DATA_SIZE - CACHE_LINE != 0, char>::type m_padding[CACHE_LINE - DATA_SIZE];
 
@@ -56,11 +56,11 @@ struct alignas(CACHE_LINE) InputFrame
         }
         inline bool IsKeyPressFrame(KeyCode keyCode) const
         {
-                return m_buttonSignature == keyCode && m_transitionState == KeyTransition::Down;
+                return m_keyCode == keyCode && m_transitionState == KeyTransition::Down;
         }
         inline bool IsKeyReleaseFrame(KeyCode keyCode) const
         {
-                return m_buttonSignature == keyCode && m_transitionState == KeyTransition::Up;
+                return m_keyCode == keyCode && m_transitionState == KeyTransition::Up;
         }
         inline bool IsKeySetHeld(KeyCodeSet keyCodeSet) const
         {
@@ -251,10 +251,7 @@ struct InputBuffer
         //================================================================
         // producer thread mutators/accessors
         void push_back(InputFrame inputFrame);
-        void emplace_back(std::tuple<long, long> mouseDeltas,
-                          KeyCode                buttonSignature,
-                          int16_t                scrollDelta,
-                          KeyTransition          transitionState);
+        void emplace_back(POINT mouseDeltas, KeyCode buttonSignature, int16_t scrollDelta, KeyTransition transitionState);
         // inline const InputFrame& back() const
         //{
         //        return m_inputFrames[m_bottom - 1 & MASK];
@@ -263,10 +260,10 @@ struct InputBuffer
         {
                 return m_inputFrames[m_bottom - 1 & MASK].m_keyState;
         }
-		inline std::tuple<long, long> GetPrevAbsMousePos() const
-		{
+        inline POINT GetPrevAbsMousePos() const
+        {
                 return m_inputFrames[m_bottom - 1 & MASK].m_absoluteMousePos;
-		}
+        }
         //================================================================
         // captures the current m_top and m_bottom for use with consumer thread accessors (call once per input frame)
         void Signal();

@@ -91,6 +91,8 @@ CreatedWindow WindowProxy::Create()
                                     GetModuleHandleA(0),            // Instance handle
                                     0                               // Additional application data
         );
+        if (!hwnd)
+                throw(std::exception("Failed to create window"));
 
         CreatedWindow output;
         output.m_hwnd    = hwnd;
