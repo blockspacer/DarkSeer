@@ -31,7 +31,7 @@ struct ActivatedKeyCodeSet : public KeyCodeSet
 
 struct alignas(CACHE_LINE) InputFrame
 {
-        KeyStateLow            m_keyState;      //				32	B
+        KeyStateLow            m_keyState;         //				32	B
         std::tuple<long, long> m_absoluteMousePos; //				8	B
         std::tuple<long, long> m_mouseDeltas;      //				8	B
         KeyCode                m_buttonSignature;  // buttonId //	2	B
@@ -45,6 +45,7 @@ struct alignas(CACHE_LINE) InputFrame
 
         inline void SetKeyHeld(KeyCode keyCode)
         {
+                auto dbg = MM256FlagsLUT[to_underlying_type(keyCode)];
                 reinterpret_cast<__m256i&>(m_keyState) =
                     _mm256_or_si256(reinterpret_cast<__m256i&>(m_keyState), MM256FlagsLUT[to_underlying_type(keyCode)]);
         }
@@ -78,7 +79,7 @@ struct alignas(CACHE_LINE) InputFrame
                 // piecewise compare the 256 bits in 64 bit chunks
                 auto compared = _mm256_cmpeq_epi64(masked, query);
                 // check if all 64 bit chunks resulted in true
-                return static_cast<bool>(_mm256_extract_epi8(compared, 0));
+                return static_cast<bool>(_mm256_testc_si256(compared, _mm256_set1_epi8('\xff')));
         }
 };
 constexpr auto SizeofInputFrame = sizeof(InputFrame);
