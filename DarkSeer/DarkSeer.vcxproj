@@ -53,7 +53,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <ForcedIncludeFiles>stdafx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;$(ProjectDir)/source/Core/public;$(ProjectDir)/Tables/Input;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;$(ProjectDir)/source/Core/public;$(ProjectDir)/Tables/Input;$(ProjectDir)/resource/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -70,7 +70,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;$(ProjectDir)/source/Core/public;$(ProjectDir)/Tables/Input;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/source/PCH/public;$(ProjectDir)/source/Utility/public;$(ProjectDir)/source/3rdParty/public;$(ProjectDir)/source/Components/public;$(ProjectDir)/source/Admin/public;$(ProjectDir)/source/ECS/public;$(ProjectDir)/source/Systems/public;$(ProjectDir)/source/Core/public;$(ProjectDir)/Tables/Input;$(ProjectDir)/resource/public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>stdafx.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <Link>

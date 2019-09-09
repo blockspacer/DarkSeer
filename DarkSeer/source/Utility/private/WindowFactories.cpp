@@ -1,4 +1,5 @@
 #include "WindowFactories.h"
+#include  <resource.h>
 WindowProxy::WindowProxy()
 {
         memset(&m_windowProxyDescriptor, 0, sizeof(m_windowProxyDescriptor));
@@ -67,6 +68,7 @@ CreatedWindow WindowProxy::Create()
         wc.hInstance         = GetModuleHandleA(0);
         wc.lpszClassName     = m_windowProxyDescriptor.WindowClassName;
         auto standard_cursor = LoadCursorA(0, IDC_ARROW);
+        wc.hIcon             = LoadIcon(GetModuleHandle(0), MAKEINTRESOURCE(IDI_ICON1));
         wc.hCursor           = standard_cursor;
         wc.style             = CS_HREDRAW | CS_VREDRAW;
         wc.hbrBackground     = m_windowProxyDescriptor.hbrBackground;
